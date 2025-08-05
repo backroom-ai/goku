@@ -143,7 +143,10 @@ const AdminModels = () => {
 
                   {/* Actions */}
                   <div className="flex items-center space-x-4">
-                    <button className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100">
+                    <button 
+                      onClick={() => handleEditModel(model)}
+                      className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100"
+                    >
                       <Edit3 className="w-4 h-4" />
                     </button>
                     
@@ -167,10 +170,7 @@ const AdminModels = () => {
                 </div>
               </div>
             ))}
-            <button 
-              onClick={handleAddModel}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
+          </div>
         </div>
         
         {filteredModels.length === 0 && (
@@ -200,7 +200,3 @@ const AdminModels = () => {
 };
 
 export default AdminModels;
-                      <button 
-                        onClick={() => handleEditModel(model)}
-                        className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100"
-                      >
