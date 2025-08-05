@@ -88,6 +88,7 @@ const useSettingsStore = create((set, get) => ({
           model.id === modelId ? updatedModel : model
         )
       }));
+      set({ showModelModal: false, editingModel: null });
       return updatedModel;
     } catch (error) {
       console.error('Failed to update model:', error);
@@ -99,6 +100,7 @@ const useSettingsStore = create((set, get) => ({
     try {
       const newModel = await api.createModelConfig(modelData);
       set(state => ({ models: [newModel, ...state.models] }));
+      set({ showModelModal: false, editingModel: null });
       return newModel;
     } catch (error) {
       console.error('Failed to create model:', error);
@@ -141,23 +143,19 @@ const useSettingsStore = create((set, get) => ({
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('modelId', modelId);
       
-      const response = await api.uploadPDF(formData);
+      // Upload to n8n webhook
+      const webhookResponse = await fetch('https://workflow.backroomop.com/webhook-test/file-uploads', {
+        method: 'POST',
+        body: formData
+      });
       
-      // Update model with new PDF
-      const model = get().models.find(m => m.id === modelId);
-      if (model) {
-        const updatedModel = {
-          ...model,
-          pdfs: [...(model.pdfs || []), response.pdf]
-        };
-        set(state => ({
-          models: state.models.map(m => 
-            m.id === modelId ? updatedModel : m
-          )
-        }));
+      if (!webhookResponse.ok) {
+        throw new Error('Failed to upload to webhook');
       }
+      
+      // Also save to our backend if needed
+      const response = await api.uploadPDF(formData);
       
       return response;
     } catch (error) {

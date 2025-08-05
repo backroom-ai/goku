@@ -38,14 +38,6 @@ const AppContent = () => {
     try {
       const newChat = await api.createChat();
       
-      // Store the initial message and navigate to chat
-      if (initialMessage) {
-        sessionStorage.setItem('initialMessage', initialMessage);
-        sessionStorage.setItem('navigateToChatId', newChat.id);
-      }
-      
-      setCurrentPage('chat');
-      
       return newChat;
     } catch (error) {
       console.error('Failed to create chat:', error);
@@ -54,15 +46,6 @@ const AppContent = () => {
   };
 
   const renderPage = () => {
-    const initialChatId = sessionStorage.getItem('navigateToChatId');
-    const initialMessage = sessionStorage.getItem('initialMessage');
-    
-    // Clear stored navigation data
-    if (currentPage === 'chat') {
-      sessionStorage.removeItem('navigateToChatId');
-      sessionStorage.removeItem('initialMessage');
-    }
-    
     switch (currentPage) {
       case 'home':
         return (
@@ -72,7 +55,7 @@ const AppContent = () => {
           />
         );
       case 'chat':
-        return <Chat initialChatId={initialChatId} initialMessage={initialMessage} />;
+        return <Chat />;
       case 'settings':
         return <Settings />;
       default:

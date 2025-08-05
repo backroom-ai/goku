@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Plus, Trash2, MessageSquare, Bot, User, Edit3, Check, X } from 'lucide-react';
 import api from '../utils/api';
 
-const Chat = ({ initialChatId, initialMessage }) => {
+const Chat = () => {
   const [chats, setChats] = useState([]);
   const [currentChat, setCurrentChat] = useState(null);
   const [message, setMessage] = useState('');
@@ -18,16 +18,33 @@ const Chat = ({ initialChatId, initialMessage }) => {
   useEffect(() => {
     loadChats();
     loadModels();
+    
+    // Handle navigation from home screen
+    const handleNavigation = () => {
+      const initialChatId = sessionStorage.getItem('navigateToChatId');
+      const initialMessage = sessionStorage.getItem('initialMessage');
+      
+      if (initialChatId && initialMessage) {
+        // Clear stored data
+        sessionStorage.removeItem('navigateToChatId');
+        sessionStorage.removeItem('initialMessage');
+        
+        // Load the specific chat and set initial message
+        loadChat(initialChatId).then(() => {
+          setMessage(initialMessage);
+          // Auto-send the message
+          setTimeout(() => {
+            const form = document.querySelector('form');
+            if (form) {
+              form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+            }
+          }, 100);
+        });
+      }
+    };
+    
+    handleNavigation();
   }, []);
-
-  useEffect(() => {
-    if (initialChatId && chats.length > 0 && !currentChat) {
-      loadChat(initialChatId);
-    }
-    if (initialMessage && !message) {
-      setMessage(initialMessage);
-    }
-  }, [initialChatId, chats, initialMessage, currentChat, message]);
 
   useEffect(() => {
     scrollToBottom();

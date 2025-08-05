@@ -22,8 +22,11 @@ const Home = ({ onNavigateToChat, onCreateNewChat }) => {
     setMessage('');
     
     try {
-      // Create new chat and navigate with the message
-      await onCreateNewChat(userMessage);
+      // Create new chat with the message
+      const newChat = await onCreateNewChat(userMessage);
+      
+      // Navigate to the chat immediately
+      onNavigateToChat(newChat.id, userMessage);
     } catch (error) {
       console.error('Failed to create chat:', error);
       setMessage(userMessage); // Restore message on error

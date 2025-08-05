@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, FileText, Eye, Trash2 } from 'lucide-react';
+import { X, Upload, FileText, Eye, Trash2, Plus } from 'lucide-react';
 import useSettingsStore from '../stores/settingsStore';
 
 const ModelEditModal = ({ isOpen, onClose }) => {
-  const { editingModel, updateModel, createModel, uploadPDF } = useSettingsStore();
+  const { editingModel, updateModel, createModel, uploadPDF, loadModels } = useSettingsStore();
   const [formData, setFormData] = useState({
     model_name: '',
     display_name: '',
@@ -15,6 +15,8 @@ const ModelEditModal = ({ isOpen, onClose }) => {
     api_endpoint: ''
   });
   const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -29,6 +31,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
         system_prompt: editingModel.system_prompt || 'You are a helpful AI assistant.',
         api_endpoint: editingModel.api_endpoint || ''
       });
+      setUploadedFiles(editingModel.uploaded_files || []);
     } else {
       setFormData({
         model_name: '',
@@ -40,7 +43,9 @@ const ModelEditModal = ({ isOpen, onClose }) => {
         system_prompt: 'You are a helpful AI assistant.',
         api_endpoint: ''
       });
+      setUploadedFiles([]);
     }
+    setSelectedFiles([]);
   }, [editingModel]);
 
   const handleSubmit = async (e) => {
@@ -53,6 +58,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
       } else {
         await createModel(formData);
       }
+      await loadModels(); // Refresh the models list
       onClose();
     } catch (error) {
       console.error('Failed to save model:', error);
@@ -62,22 +68,43 @@ const ModelEditModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleFileUpload = async (e) => {
+  const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
-    if (!files.length || !editingModel) return;
+    setSelectedFiles(files);
+  };
+
+  const handleFileUpload = async () => {
+    if (!selectedFiles.length) return;
 
     setUploading(true);
     try {
-      for (const file of files) {
+      const uploadResults = [];
+      for (const file of selectedFiles) {
         if (file.type === 'application/pdf') {
-          await uploadPDF(editingModel.id, file);
+          const result = await uploadPDF(editingModel?.id || 'temp', file);
+          uploadResults.push({
+            name: file.name,
+            size: file.size,
+            uploadedAt: new Date().toISOString(),
+            ...result
+          });
         }
       }
+      setUploadedFiles([...uploadedFiles, ...uploadResults]);
+      setSelectedFiles([]);
+      // Reset file input
+      const fileInput = document.getElementById('pdf-upload');
+      if (fileInput) fileInput.value = '';
     } catch (error) {
       console.error('Failed to upload files:', error);
+      alert('Failed to upload files. Please try again.');
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleRemoveFile = (index) => {
+    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
   };
 
   const providers = [
@@ -244,34 +271,134 @@ const ModelEditModal = ({ isOpen, onClose }) => {
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Knowledge Base</h3>
               
-              {/* Upload Area */}
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+              {/* File Selection */}
+              <div className="mb-4">
                 <input
                   type="file"
                   multiple
                   accept=".pdf"
-                  onChange={handleFileUpload}
+                  onChange={handleFileSelect}
                   className="hidden"
                   id="pdf-upload"
                   disabled={uploading}
                 />
-                <label htmlFor="pdf-upload" className="cursor-pointer">
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">
-                    {uploading ? 'Uploading...' : 'Click to upload PDF files'}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Multiple PDFs supported
-                  </p>
-                </label>
+                <div className="flex items-center space-x-3">
+                  <label
+                    htmlFor="pdf-upload"
+                    className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Select PDFs
+                  </label>
+                  {selectedFiles.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleFileUpload}
+                      disabled={uploading}
+                      className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {uploading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''}
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+                {selectedFiles.length > 0 && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    Selected: {selectedFiles.map(f => f.name).join(', ')}
+                  </div>
+                )}
               </div>
 
-              {/* PDF List */}
-              {editingModel.pdfs && editingModel.pdfs.length > 0 && (
+              {/* Uploaded Files List */}
+              {uploadedFiles.length > 0 && (
                 <div className="mt-4 space-y-2">
                   <h4 className="text-sm font-medium text-gray-700">Uploaded Documents</h4>
-                  {editingModel.pdfs.map((pdf, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  {uploadedFiles.map((file, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                      {/* File Header */}
+                      <div className="flex items-center justify-between p-3 bg-gray-50">
+                        <div className="flex items-center">
+                          <FileText className="w-4 h-4 text-red-500 mr-2" />
+                          <div>
+                            <span className="text-sm font-medium text-gray-700">{file.name}</span>
+                            <div className="text-xs text-gray-500">
+                              {file.size ? `${Math.round(file.size / 1024)} KB` : ''} • 
+                              {file.uploadedAt ? new Date(file.uploadedAt).toLocaleDateString() : ''}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile(index)}
+                            className="text-red-600 hover:text-red-700 text-sm p-1 rounded hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* PDF Viewer */}
+                      {file.url && (
+                        <div className="h-96 bg-gray-100">
+                          <iframe
+                            src={file.url}
+                            className="w-full h-full border-0"
+                            title={`PDF Viewer - ${file.name}`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Upload Instructions */}
+              {uploadedFiles.length === 0 && selectedFiles.length === 0 && (
+                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">No documents uploaded yet</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select PDF files to upload to the knowledge base
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {saving ? 'Saving...' : (editingModel ? 'Update Model' : 'Create Model')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default ModelEditModal;
                       <div className="flex items-center">
                         <FileText className="w-4 h-4 text-red-500 mr-2" />
                         <span className="text-sm text-gray-700">{pdf.name}</span>
