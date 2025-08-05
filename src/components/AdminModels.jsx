@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Settings, Eye, EyeOff, Save, Search, Filter, Toggle } from 'lucide-react';
+import { Bot, Settings, Eye, EyeOff, Save, Search, Filter, ToggleLeft as Toggle } from 'lucide-react';
 import api from '../utils/api';
 
 const AdminModels = () => {
@@ -58,6 +58,7 @@ const AdminModels = () => {
                          (statusFilter === 'disabled' && !model.enabled);
     return matchesSearch && matchesStatus;
   });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -114,6 +115,7 @@ const AdminModels = () => {
           </div>
         </div>
       </div>
+
       {/* Models */}
       <div className="flex-1 overflow-auto p-6 space-y-6 bg-gray-50">
         {Object.entries(groupedModels).map(([provider, providerModels]) => (
@@ -256,92 +258,6 @@ const AdminModels = () => {
             </p>
           </div>
         )}
-      </div>
-    </div>
-  );
-};
-                        onClick={() => handleToggleEnabled(model.id, !model.enabled)}
-                        disabled={saving[model.id]}
-                        className={`flex items-center px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                          model.enabled
-                            ? 'bg-green-600 text-white hover:bg-green-700'
-                            : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                        } ${saving[model.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        {model.enabled ? (
-                          <>
-                            <Eye className="w-4 h-4 mr-1" />
-                            Enabled
-                          </>
-                        ) : (
-                          <>
-                            <EyeOff className="w-4 h-4 mr-1" />
-                            Disabled
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Default Temperature
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="2"
-                        step="0.1"
-                        value={model.default_temperature}
-                        onChange={(e) => handleUpdateModel(model.id, 'default_temperature', parseFloat(e.target.value))}
-                        className="w-full px-3 py-2 bg-gray-600 text-white border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Max Tokens
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={model.max_tokens}
-                        onChange={(e) => handleUpdateModel(model.id, 'max_tokens', parseInt(e.target.value))}
-                        className="w-full px-3 py-2 bg-gray-600 text-white border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    {model.provider === 'n8n' && (
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          API Endpoint
-                        </label>
-                        <input
-                          type="url"
-                          value={model.api_endpoint || ''}
-                          onChange={(e) => handleUpdateModel(model.id, 'api_endpoint', e.target.value)}
-                          placeholder="https://your-n8n-webhook-url"
-                          className="w-full px-3 py-2 bg-gray-600 text-white border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    )}
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        System Prompt
-                      </label>
-                      <textarea
-                        value={model.system_prompt}
-                        onChange={(e) => handleUpdateModel(model.id, 'system_prompt', e.target.value)}
-                        rows={3}
-                        className="w-full px-3 py-2 bg-gray-600 text-white border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter default system prompt for this model..."
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );
