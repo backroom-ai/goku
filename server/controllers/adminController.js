@@ -243,11 +243,15 @@ export const createModelConfig = async (req, res) => {
 
 export const uploadPDFs = async (req, res) => {
   try {
-    const { modelId } = req.body;
+    const modelId = req.body.modelId;
     const files = req.files;
 
-    if (!files || files.length === 0 || !modelId) {
+    if (!files || files.length === 0) {
       return res.status(400).json({ error: 'Files and model ID are required' });
+    }
+
+    if (!modelId) {
+      return res.status(400).json({ error: 'Model ID is required' });
     }
 
     await ensureUploadsDir();
@@ -257,9 +261,15 @@ export const uploadPDFs = async (req, res) => {
 
     // Process each file
     for (const file of files) {
+      if (!file.originalname || !file.buffer) {
+        console.warn('Skipping invalid file:', file);
+        continue;
+      }
+
       // Generate unique filename
       const timestamp = Date.now();
-      const filename = `${timestamp}_${file.originalname}`;
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const filename = `${timestamp}_${randomSuffix}_${file.originalname}`;
       const filePath = path.join(uploadsDir, filename);
       const relativePath = `/uploads/${filename}`;
       
@@ -268,10 +278,10 @@ export const uploadPDFs = async (req, res) => {
       
       // Store file metadata in database
       const result = await pool.query(
-        `INSERT INTO uploads (user_id, filename, original_name, file_type, file_size, file_path, model_id) 
+        `INSERT INTO uploads (user_id, model_id, filename, original_name, file_type, file_size, file_path) 
          VALUES ($1, $2, $3, $4, $5, $6, $7) 
          RETURNING *`,
-        [req.user.id, filename, file.originalname, file.mimetype, file.size, relativePath, modelId]
+        [req.user.id, modelId, filename, file.originalname, file.mimetype, file.size, relativePath]
       );
       
       uploadedFiles.push({
@@ -293,24 +303,35 @@ export const uploadPDFs = async (req, res) => {
       });
     }
 
-    // Send all files to webhook in a single request
+    if (uploadedFiles.length === 0) {
+      return res.status(400).json({ error: 'No valid files were processed' });
+    }
+
+    // Send all files to webhook in a single batch request
     try {
       const webhookPayload = {
         modelId: modelId,
         files: webhookFiles,
+        uploadCount: webhookFiles.length,
         timestamp: new Date().toISOString()
       };
       
-      const webhookResponse = await fetch('https://workflow.backroomop.com/webhook-test/file-uploads', {
+      console.log(`Sending ${webhookFiles.length} files to webhook for model ${modelId}`);
+      
+      const response = await fetch('https://workflow.backroomop.com/webhook-test/file-uploads', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'User-Agent': 'TBridge-Server/1.0'
         },
-        body: JSON.stringify(webhookPayload)
+        body: JSON.stringify(webhookPayload),
+        timeout: 30000 // 30 second timeout
       });
       
-      if (!webhookResponse.ok) {
-        console.warn('Webhook notification failed, but files were stored locally');
+      if (!response.ok) {
+        console.warn(`Webhook notification failed (${response.status}), but files were stored locally`);
+      } else {
+        console.log('Webhook notification sent successfully');
       }
     } catch (webhookError) {
       console.error('Webhook notification error:', webhookError);
@@ -319,7 +340,8 @@ export const uploadPDFs = async (req, res) => {
     
     res.json({
       message: `${uploadedFiles.length} PDF(s) uploaded successfully`,
-      files: uploadedFiles
+      files: uploadedFiles,
+      modelId: modelId
     });
   } catch (error) {
     console.error('Upload PDFs error:', error);

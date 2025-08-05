@@ -75,29 +75,40 @@ const ModelEditModal = ({ isOpen, onClose }) => {
 
   const handleFileUpload = async () => {
     if (!selectedFiles.length) return;
+    
+    if (!editingModel?.id) {
+      alert('Please save the model first before uploading files');
+      return;
+    }
 
     setUploading(true);
     try {
-      const uploadResults = [];
-      for (const file of selectedFiles) {
-        if (file.type === 'application/pdf') {
-          const result = await uploadPDF(editingModel?.id || 'temp', file);
-          uploadResults.push({
-            name: file.name,
-            size: file.size,
-            uploadedAt: new Date().toISOString(),
-            ...result
-          });
-        }
+      // Filter only PDF files
+      const pdfFiles = selectedFiles.filter(file => file.type === 'application/pdf');
+      
+      if (pdfFiles.length === 0) {
+        alert('Please select PDF files only');
+        return;
       }
-      setUploadedFiles([...uploadedFiles, ...uploadResults]);
+      
+      console.log(`Uploading ${pdfFiles.length} PDF files`);
+      
+      const result = await uploadPDFs(editingModel.id, pdfFiles);
+      
+      // Add uploaded files to the list
+      if (result.files) {
+        setUploadedFiles([...uploadedFiles, ...result.files]);
+      }
+      
       setSelectedFiles([]);
       // Reset file input
       const fileInput = document.getElementById('pdf-upload');
       if (fileInput) fileInput.value = '';
+      
+      alert(`Successfully uploaded ${result.files?.length || 0} PDF(s)`);
     } catch (error) {
       console.error('Failed to upload files:', error);
-      alert('Failed to upload files. Please try again.');
+      alert(`Failed to upload files: ${error.message}`);
     } finally {
       setUploading(false);
     }
@@ -285,10 +296,14 @@ const ModelEditModal = ({ isOpen, onClose }) => {
                 <div className="flex items-center space-x-3">
                   <label
                     htmlFor="pdf-upload"
-                    className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors"
+                    className={`flex items-center px-4 py-2 rounded-lg transition-colors cursor-pointer ${
+                      uploading 
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Select PDFs
+                    {uploading ? 'Uploading...' : 'Select PDFs'}
                   </label>
                   {selectedFiles.length > 0 && (
                     <button
@@ -313,7 +328,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
                 </div>
                 {selectedFiles.length > 0 && (
                   <div className="mt-2 text-sm text-gray-600">
-                    Selected: {selectedFiles.map(f => f.name).join(', ')}
+                    Selected {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''}: {selectedFiles.map(f => f.name).join(', ')}
                   </div>
                 )}
               </div>
@@ -368,7 +383,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
                   <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                   <p className="text-sm text-gray-600">No documents uploaded yet</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Select PDF files to upload to the knowledge base
+                    Select one or more PDF files to upload to the knowledge base
                   </p>
                 </div>
               )}

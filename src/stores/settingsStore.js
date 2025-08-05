@@ -149,9 +149,11 @@ const useSettingsStore = create((set, get) => ({
         formData.append('files', files[i]);
       }
       
-      // Upload to n8n webhook
+      console.log(`Uploading ${files.length} files for model ${modelId}`);
+      
       const response = await api.uploadPDFs(formData);
       
+      console.log('Upload response:', response);
       return response;
     } catch (error) {
       console.error('Failed to upload PDFs:', error);
