@@ -97,7 +97,7 @@ const Home = ({ onNavigateToChat, onCreateNewChat }) => {
         <div className="max-w-4xl mx-auto px-6 py-12">
           {/* AI Orb and Greeting */}
           <div className="text-center mb-12">
-            <div className="mb-8">
+            <div className="mb-8 flex justify-center">
               <AIOrb size={120} />
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
