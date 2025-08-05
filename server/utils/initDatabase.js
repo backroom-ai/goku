@@ -86,7 +86,6 @@ const createTables = async () => {
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       model_id uuid REFERENCES model_configs(id) ON DELETE CASCADE,
-      model_id uuid REFERENCES model_configs(id) ON DELETE CASCADE,
       filename text NOT NULL,
       original_name text NOT NULL,
       file_type text NOT NULL,
