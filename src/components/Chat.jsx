@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Trash2, MessageSquare, Bot, User } from 'lucide-react';
+import { Send, Plus, Trash2, MessageSquare, Bot, User, BarChart3, Activity, Zap } from 'lucide-react';
 import api from '../utils/api';
 
 const Chat = () => {
@@ -143,14 +143,38 @@ const Chat = () => {
       ));
   };
 
+  // Quick action cards for the home screen
+  const quickActions = [
+    {
+      title: 'New Chat',
+      description: 'Start a conversation with AI',
+      icon: MessageSquare,
+      action: createNewChat,
+      color: 'bg-blue-50 border-blue-200 hover:bg-blue-100'
+    },
+    {
+      title: 'Usage Stats',
+      description: 'View your chat statistics',
+      icon: BarChart3,
+      action: () => console.log('Usage stats'),
+      color: 'bg-green-50 border-green-200 hover:bg-green-100'
+    },
+    {
+      title: 'System Status',
+      description: 'Check AI model availability',
+      icon: Activity,
+      action: () => console.log('System status'),
+      color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
+    }
+  ];
   return (
     <div className="flex h-full">
       {/* Chat list sidebar */}
-      <div className="w-80 bg-gray-800 border-r border-gray-700 flex flex-col">
-        <div className="p-4 border-b border-gray-700">
+      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        <div className="p-4 border-b border-gray-200">
           <button
             onClick={createNewChat}
-            className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
           >
             <Plus className="w-4 h-4 mr-2" />
             New Chat
@@ -161,18 +185,22 @@ const Chat = () => {
           {chats.map((chat) => (
             <div
               key={chat.id}
-              className={`flex items-center justify-between p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors ${
-                currentChat?.id === chat.id ? 'bg-gray-700' : ''
+              className={`flex items-center justify-between p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
+                currentChat?.id === chat.id ? 'bg-blue-50 border-r-2 border-blue-600' : ''
               }`}
               onClick={() => loadChat(chat.id)}
             >
               <div className="flex items-center flex-1 min-w-0">
-                <MessageSquare className="w-4 h-4 text-gray-400 mr-3 flex-shrink-0" />
+                <MessageSquare className={`w-4 h-4 mr-3 flex-shrink-0 ${
+                  currentChat?.id === chat.id ? 'text-blue-600' : 'text-gray-400'
+                }`} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-white truncate">
+                  <p className={`text-sm font-medium truncate ${
+                    currentChat?.id === chat.id ? 'text-blue-900' : 'text-gray-900'
+                  }`}>
                     {chat.title}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-500">
                     {new Date(chat.updated_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -182,7 +210,7 @@ const Chat = () => {
                   e.stopPropagation();
                   deleteChat(chat.id);
                 }}
-                className="text-gray-400 hover:text-red-400 transition-colors p-1"
+                className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -196,16 +224,16 @@ const Chat = () => {
         {currentChat ? (
           <>
             {/* Chat header */}
-            <div className="p-4 border-b border-gray-700 bg-gray-800">
+            <div className="p-4 border-b border-gray-200 bg-white">
               <div className="flex items-center justify-between">
-                <h1 className="text-lg font-semibold text-white">
+                <h1 className="text-lg font-semibold text-gray-900">
                   {currentChat.title}
                 </h1>
                 <div className="flex items-center space-x-3">
                   <select
                     value={selectedModel}
                     onChange={(e) => setSelectedModel(e.target.value)}
-                    className="px-3 py-1 bg-gray-700 text-white border border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     {models.map((model) => (
                       <option key={model.model_name} value={model.model_name}>
@@ -218,7 +246,7 @@ const Chat = () => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
               {currentChat.messages?.map((msg) => (
                 <div
                   key={msg.id}
@@ -227,8 +255,8 @@ const Chat = () => {
                   }`}
                 >
                   {msg.role === 'assistant' && (
-                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-4 h-4 text-white" />
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Bot className="w-4 h-4 text-blue-600" />
                     </div>
                   )}
                   
@@ -236,36 +264,40 @@ const Chat = () => {
                     className={`max-w-3xl p-4 rounded-lg ${
                       msg.role === 'user'
                         ? 'bg-blue-600 text-white'
-                        : 'bg-gray-700 text-white'
+                        : 'bg-white text-gray-900 border border-gray-200'
                     }`}
                   >
-                    <div className="prose prose-invert max-w-none">
+                    <div className={`prose max-w-none ${
+                      msg.role === 'user' ? 'prose-invert' : ''
+                    }`}>
                       {formatContent(msg.content)}
                     </div>
                     {msg.model_used && (
-                      <div className="mt-2 text-xs text-gray-300">
+                      <div className={`mt-2 text-xs ${
+                        msg.role === 'user' ? 'text-blue-200' : 'text-gray-500'
+                      }`}>
                         Model: {msg.model_used} • Tokens: {msg.tokens_used || 0}
                       </div>
                     )}
                   </div>
 
                   {msg.role === 'user' && (
-                    <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-white" />
+                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-gray-600" />
                     </div>
                   )}
                 </div>
               ))}
               {loading && (
                 <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Bot className="w-4 h-4 text-blue-600" />
                   </div>
-                  <div className="bg-gray-700 text-white p-4 rounded-lg">
+                  <div className="bg-white text-gray-900 p-4 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                   </div>
                 </div>
@@ -274,20 +306,20 @@ const Chat = () => {
             </div>
 
             {/* Message input */}
-            <div className="p-4 border-t border-gray-700 bg-gray-800">
+            <div className="p-4 border-t border-gray-200 bg-white">
               <form onSubmit={sendMessage} className="flex space-x-3">
                 <input
                   type="text"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Type your message..."
-                  className="flex-1 px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   disabled={loading}
                 />
                 <button
                   type="submit"
                   disabled={loading || !message.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -295,15 +327,37 @@ const Chat = () => {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-400 mb-2">
-                No chat selected
+          <div className="flex-1 flex items-center justify-center bg-gray-50">
+            <div className="text-center max-w-4xl mx-auto px-6">
+              <Bot className="w-16 h-16 text-blue-600 mx-auto mb-6" />
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                Welcome to TBridge
               </h2>
-              <p className="text-gray-500">
-                Create a new chat or select an existing one to start chatting
+              <p className="text-lg text-gray-600 mb-12">
+                Your intelligent AI assistant platform. Get started with one of the quick actions below.
               </p>
+              
+              {/* Quick Actions Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {quickActions.map((action, index) => {
+                  const Icon = action.icon;
+                  return (
+                    <button
+                      key={index}
+                      onClick={action.action}
+                      className={`p-6 rounded-xl border-2 transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1 ${action.color}`}
+                    >
+                      <Icon className="w-8 h-8 mx-auto mb-4 text-gray-700" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        {action.title}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {action.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

@@ -169,3 +169,54 @@ export const deletePromptTemplate = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export const getApiKeys = async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT key_name, key_value FROM api_keys ORDER BY key_name'
+    );
+
+    const keys = {};
+    result.rows.forEach(row => {
+      keys[row.key_name] = row.key_value;
+    });
+
+    res.json(keys);
+  } catch (error) {
+    console.error('Get API keys error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const updateApiKeys = async (req, res) => {
+  try {
+    const keys = req.body;
+
+    // Start transaction
+    await pool.query('BEGIN');
+
+    try {
+      // Delete existing keys
+      await pool.query('DELETE FROM api_keys');
+
+      // Insert new keys
+      for (const [keyName, keyValue] of Object.entries(keys)) {
+        if (keyValue && keyValue.trim()) {
+          await pool.query(
+            'INSERT INTO api_keys (key_name, key_value) VALUES ($1, $2)',
+            [keyName, keyValue.trim()]
+          );
+        }
+      }
+
+      await pool.query('COMMIT');
+      res.json({ message: 'API keys updated successfully' });
+    } catch (error) {
+      await pool.query('ROLLBACK');
+      throw error;
+    }
+  } catch (error) {
+    console.error('Update API keys error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

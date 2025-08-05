@@ -5,7 +5,7 @@ import Layout from './components/Layout';
 import Chat from './components/Chat';
 import AdminUsers from './components/AdminUsers';
 import AdminModels from './components/AdminModels';
-import AdminSettings from './components/AdminSettings';
+import AdminApiKeys from './components/AdminApiKeys';
 
 const AppContent = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -13,8 +13,8 @@ const AppContent = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -31,8 +31,8 @@ const AppContent = () => {
         return <AdminUsers />;
       case 'admin-models':
         return <AdminModels />;
-      case 'admin-settings':
-        return <AdminSettings />;
+      case 'admin-api-keys':
+        return <AdminApiKeys />;
       default:
         return <Chat />;
     }

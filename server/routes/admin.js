@@ -7,7 +7,9 @@ import {
   updateModelConfig,
   getPromptTemplates,
   createPromptTemplate,
-  deletePromptTemplate
+  deletePromptTemplate,
+  getApiKeys,
+  updateApiKeys
 } from '../controllers/adminController.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 
@@ -32,4 +34,7 @@ router.get('/templates', getPromptTemplates);
 router.post('/templates', createPromptTemplate);
 router.delete('/templates/:templateId', deletePromptTemplate);
 
+// API Keys management
+router.get('/api-keys', getApiKeys);
+router.put('/api-keys', updateApiKeys);
 export default router;

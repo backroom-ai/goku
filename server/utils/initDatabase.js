@@ -92,6 +92,15 @@ const createTables = async () => {
       file_path text NOT NULL,
       created_at timestamptz DEFAULT now()
     );
+
+    -- API Keys storage
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      key_name text UNIQUE NOT NULL,
+      key_value text NOT NULL,
+      created_at timestamptz DEFAULT now(),
+      updated_at timestamptz DEFAULT now()
+    );
   `;
 
   await pool.query(createTablesSQL);
@@ -109,6 +118,7 @@ const createIndexes = async () => {
     CREATE INDEX IF NOT EXISTS idx_model_configs_enabled ON model_configs(enabled);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_prompt_templates_created_by ON prompt_templates(created_by);
+    CREATE INDEX IF NOT EXISTS idx_api_keys_name ON api_keys(key_name);
   `;
 
   await pool.query(createIndexesSQL);

@@ -151,6 +151,17 @@ class APIClient {
     });
   }
 
+  // API Keys methods
+  async getApiKeys() {
+    return this.request('/admin/api-keys');
+  }
+
+  async updateApiKeys(keys) {
+    return this.request('/admin/api-keys', {
+      method: 'PUT',
+      body: JSON.stringify(keys),
+    });
+  }
   logout() {
     this.setToken(null);
   }
