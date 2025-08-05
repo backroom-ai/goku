@@ -56,6 +56,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
       onClose();
     } catch (error) {
       console.error('Failed to save model:', error);
+      alert('Failed to save model. Please try again.');
     } finally {
       setSaving(false);
     }

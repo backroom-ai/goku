@@ -18,12 +18,16 @@ const Home = ({ onNavigateToChat, onCreateNewChat }) => {
     e.preventDefault();
     if (!message.trim()) return;
     
-    // Create new chat and navigate
-    const newChat = await onCreateNewChat(message);
+    const userMessage = message.trim();
     setMessage('');
     
-    // Navigate to chat with the initial message
-    onNavigateToChat(newChat.id, message);
+    try {
+      // Create new chat and navigate with the message
+      await onCreateNewChat(userMessage);
+    } catch (error) {
+      console.error('Failed to create chat:', error);
+      setMessage(userMessage); // Restore message on error
+    }
   };
 
   const exampleCards = [

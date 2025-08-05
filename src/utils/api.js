@@ -153,7 +153,7 @@ class APIClient {
       method: 'POST',
       body: JSON.stringify(config),
     });
-  },
+  }
 
   async updateChatTitle(chatId, title) {
     return this.request(`/chat/${chatId}/title`, {

@@ -234,11 +234,8 @@ export const uploadPDF = async (req, res) => {
       return res.status(400).json({ error: 'File and model ID are required' });
     }
 
-    // Convert buffer to Blob for FormData
+    // Create FormData for webhook
     const formData = new FormData();
-    console.log(file);
-    
-    // Create a Blob from the buffer
     const blob = new Blob([file.buffer], { type: file.mimetype });
     formData.append('file', blob, file.originalname);
     
@@ -252,11 +249,14 @@ export const uploadPDF = async (req, res) => {
     }
 
     // Store PDF metadata in database
+    const filename = `${Date.now()}_${file.originalname}`;
+    const filePath = `/uploads/${filename}`;
+    
     const result = await pool.query(
       `INSERT INTO uploads (user_id, filename, original_name, file_type, file_size, file_path) 
        VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING *`,
-      [req.user.id, file.filename, file.originalname, file.mimetype, file.size, file.path]
+      [req.user.id, filename, file.originalname, file.mimetype, file.size, filePath]
     );
 
     res.json({

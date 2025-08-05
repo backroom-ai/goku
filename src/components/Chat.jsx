@@ -21,13 +21,13 @@ const Chat = ({ initialChatId, initialMessage }) => {
   }, []);
 
   useEffect(() => {
-    if (initialChatId && chats.length > 0) {
+    if (initialChatId && chats.length > 0 && !currentChat) {
       loadChat(initialChatId);
-      if (initialMessage) {
-        setMessage(initialMessage);
-      }
     }
-  }, [initialChatId, chats]);
+    if (initialMessage && !message) {
+      setMessage(initialMessage);
+    }
+  }, [initialChatId, chats, initialMessage, currentChat, message]);
 
   useEffect(() => {
     scrollToBottom();

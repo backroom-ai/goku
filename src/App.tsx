@@ -38,12 +38,18 @@ const AppContent = () => {
     try {
       const newChat = await api.createChat();
       
-      // Navigate to the new chat with initial message
-      handleNavigateToChat(newChat.id, initialMessage);
+      // Store the initial message and navigate to chat
+      if (initialMessage) {
+        sessionStorage.setItem('initialMessage', initialMessage);
+        sessionStorage.setItem('navigateToChatId', newChat.id);
+      }
+      
+      setCurrentPage('chat');
       
       return newChat;
     } catch (error) {
       console.error('Failed to create chat:', error);
+      throw error;
     }
   };
 
