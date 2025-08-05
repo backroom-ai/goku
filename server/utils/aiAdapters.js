@@ -169,7 +169,6 @@ class N8NAdapter extends AIAdapter {
           ...options
         }
       );
-      console.log('N8N Webhook response:', response.data);
 
       return {
         content: response.data.output || response.data.content,
