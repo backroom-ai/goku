@@ -3,7 +3,7 @@ import { X, Upload, FileText, Eye, Trash2, Plus } from 'lucide-react';
 import useSettingsStore from '../stores/settingsStore';
 
 const ModelEditModal = ({ isOpen, onClose }) => {
-  const { editingModel, updateModel, createModel, uploadPDF, loadModels } = useSettingsStore();
+  const { editingModel, updateModel, createModel, uploadPDFs, loadModels } = useSettingsStore();
   const [formData, setFormData] = useState({
     model_name: '',
     display_name: '',
