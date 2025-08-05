@@ -3,7 +3,7 @@ import { X, Upload, FileText, Eye, Trash2, Plus } from 'lucide-react';
 import useSettingsStore from '../stores/settingsStore';
 
 const ModelEditModal = ({ isOpen, onClose }) => {
-  const { editingModel, updateModel, createModel, uploadPDFs, loadModels } = useSettingsStore();
+  const { editingModel, updateModel, createModel, uploadPDFs, loadModels, getModelUploads, deleteUpload } = useSettingsStore();
   const [formData, setFormData] = useState({
     model_name: '',
     display_name: '',
@@ -16,6 +16,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
   });
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [saving, setSaving] = useState(false);
 
@@ -31,7 +32,12 @@ const ModelEditModal = ({ isOpen, onClose }) => {
         system_prompt: editingModel.system_prompt || 'You are a helpful AI assistant.',
         api_endpoint: editingModel.api_endpoint || ''
       });
-      setUploadedFiles(editingModel.uploaded_files || []);
+      // Load uploaded files for existing models
+      if (editingModel.id) {
+        loadUploadedFiles(editingModel.id);
+      } else {
+        setUploadedFiles([]);
+      }
     } else {
       setFormData({
         model_name: '',
@@ -47,6 +53,19 @@ const ModelEditModal = ({ isOpen, onClose }) => {
     }
     setSelectedFiles([]);
   }, [editingModel]);
+
+  const loadUploadedFiles = async (modelId) => {
+    setLoadingFiles(true);
+    try {
+      const files = await getModelUploads(modelId);
+      setUploadedFiles(files);
+    } catch (error) {
+      console.error('Failed to load uploaded files:', error);
+      setUploadedFiles([]);
+    } finally {
+      setLoadingFiles(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -114,8 +133,14 @@ const ModelEditModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleRemoveFile = (index) => {
-    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
+  const handleRemoveFile = async (fileId) => {
+    try {
+      await deleteUpload(fileId);
+      setUploadedFiles(uploadedFiles.filter(file => file.id !== fileId));
+    } catch (error) {
+      console.error('Failed to delete file:', error);
+      alert('Failed to delete file. Please try again.');
+    }
   };
 
   const providers = [
@@ -334,11 +359,16 @@ const ModelEditModal = ({ isOpen, onClose }) => {
               </div>
 
               {/* Uploaded Files List */}
-              {uploadedFiles.length > 0 && (
+              {loadingFiles ? (
+                <div className="mt-4 text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="text-sm text-gray-600 mt-2">Loading uploaded files...</p>
+                </div>
+              ) : uploadedFiles.length > 0 ? (
                 <div className="mt-4 space-y-2">
                   <h4 className="text-sm font-medium text-gray-700">Uploaded Documents</h4>
                   {uploadedFiles.map((file, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div key={file.id || index} className="border border-gray-200 rounded-lg overflow-hidden">
                       {/* File Header */}
                       <div className="flex items-center justify-between p-3 bg-gray-50">
                         <div className="flex items-center">
@@ -354,8 +384,17 @@ const ModelEditModal = ({ isOpen, onClose }) => {
                         <div className="flex items-center space-x-2">
                           <button
                             type="button"
+                            onClick={() => window.open(file.url, '_blank')}
+                            className="text-blue-600 hover:text-blue-700 text-sm p-1 rounded hover:bg-blue-50 transition-colors"
+                            title="Open PDF in new tab"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleRemoveFile(file.id)}
                             className="text-red-600 hover:text-red-700 text-sm p-1 rounded hover:bg-red-50 transition-colors"
+                            title="Delete file"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -375,7 +414,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
                     </div>
                   ))}
                 </div>
-              )}
+              ) : null}
               
               {/* Upload Instructions */}
               {uploadedFiles.length === 0 && selectedFiles.length === 0 && (
