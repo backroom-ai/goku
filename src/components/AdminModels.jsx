@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Search, Filter, Edit3, Plus, Save, X } from 'lucide-react';
+import { Bot, Search, Filter, Edit3, Plus } from 'lucide-react';
 import useSettingsStore from '../stores/settingsStore';
 
 const AdminModels = () => {
@@ -15,8 +15,6 @@ const AdminModels = () => {
   } = useSettingsStore();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [editingModel, setEditingModel] = useState(null);
-  const [editForm, setEditForm] = useState({ display_name: '', model_name: '' });
 
   useEffect(() => {
     if (models.length === 0) {
@@ -51,30 +49,6 @@ const AdminModels = () => {
       case 'ollama': return '🏠';
       default: return '🔧';
     }
-  };
-
-  const handleEditModel = (model) => {
-    setEditingModel(model.id);
-    setEditForm({
-      display_name: model.display_name,
-      model_name: model.model_name
-    });
-  };
-
-  const handleSaveEdit = async () => {
-    try {
-      const model = models.find(m => m.id === editingModel);
-      await updateModel(editingModel, { ...model, ...editForm });
-      setEditingModel(null);
-      setEditForm({ display_name: '', model_name: '' });
-    } catch (error) {
-      console.error('Failed to update model:', error);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingModel(null);
-    setEditForm({ display_name: '', model_name: '' });
   };
 
   return (
@@ -135,101 +109,48 @@ const AdminModels = () => {
           <div className="divide-y divide-gray-200">
             {filteredModels.map((model) => (
               <div key={model.id} className="p-6 hover:bg-gray-50 transition-colors">
-                {editingModel === model.id ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-xl">
-                        {getModelIcon(model.provider)}
-                      </div>
-                      <div className="flex-1 space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Display Name
-                          </label>
-                          <input
-                            type="text"
-                            value={editForm.display_name}
-                            onChange={(e) => setEditForm({ ...editForm, display_name: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Model Name/Tag
-                          </label>
-                          <input
-                            type="text"
-                            value={editForm.model_name}
-                            onChange={(e) => setEditForm({ ...editForm, model_name: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                      </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    {/* Model Icon */}
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-xl">
+                      {getModelIcon(model.provider)}
                     </div>
-                    <div className="flex items-center justify-end space-x-3">
-                      <button
-                        onClick={handleSaveEdit}
-                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        <Save className="w-4 h-4 mr-2" />
-                        Save
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        className="flex items-center px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Cancel
-                      </button>
+                    
+                    {/* Model Info */}
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">
+                        {model.display_name}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {model.model_name} • {model.provider}
+                      </p>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      {/* Model Icon */}
-                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-xl">
-                        {getModelIcon(model.provider)}
-                      </div>
-                      
-                      {/* Model Info */}
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900">
-                          {model.display_name}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          {model.model_name} • {model.provider}
-                        </p>
-                      </div>
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center space-x-4">
-                      <button 
-                        onClick={() => handleEditModel(model)}
-                        className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      
-                      {/* Toggle Switch */}
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={model.enabled}
-                          onChange={(e) => handleToggleEnabled(model.id, e.target.checked)}
-                          className="sr-only"
-                        />
-                        <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                          model.enabled ? 'bg-blue-600' : 'bg-gray-300'
-                        }`}>
-                          <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                            model.enabled ? 'translate-x-5' : 'translate-x-0'
-                          } mt-0.5 ml-0.5`}></div>
-                        </div>
-                      </label>
-                    </div>
+                  {/* Actions */}
+                  <div className="flex items-center space-x-4">
+                    <button className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100">
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    
+                    {/* Toggle Switch */}
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={model.enabled}
+                        onChange={(e) => handleToggleEnabled(model.id, e.target.checked)}
+                        className="sr-only"
+                      />
+                      <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                        model.enabled ? 'bg-blue-600' : 'bg-gray-300'
+                      }`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                          model.enabled ? 'translate-x-5' : 'translate-x-0'
+                        } mt-0.5 ml-0.5`}></div>
+                      </div>
+                    </label>
                   </div>
-                )}
+                </div>
               </div>
             ))}
           </div>

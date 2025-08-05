@@ -101,20 +101,6 @@ const createTables = async () => {
       created_at timestamptz DEFAULT now(),
       updated_at timestamptz DEFAULT now()
     );
-
-    -- Knowledge entries for AI context
-    CREATE TABLE IF NOT EXISTS knowledge_entries (
-      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      title text NOT NULL,
-      type text NOT NULL CHECK (type IN ('text', 'pdf')),
-      content text,
-      file_path text,
-      original_filename text,
-      model_id uuid REFERENCES model_configs(id) ON DELETE CASCADE,
-      created_by uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      created_at timestamptz DEFAULT now(),
-      updated_at timestamptz DEFAULT now()
-    );
   `;
 
   await pool.query(createTablesSQL);
@@ -133,9 +119,6 @@ const createIndexes = async () => {
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_prompt_templates_created_by ON prompt_templates(created_by);
     CREATE INDEX IF NOT EXISTS idx_api_keys_name ON api_keys(key_name);
-    CREATE INDEX IF NOT EXISTS idx_knowledge_entries_model_id ON knowledge_entries(model_id);
-    CREATE INDEX IF NOT EXISTS idx_knowledge_entries_type ON knowledge_entries(type);
-    CREATE INDEX IF NOT EXISTS idx_knowledge_entries_created_by ON knowledge_entries(created_by);
   `;
 
   await pool.query(createIndexesSQL);

@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Send, MessageSquare, BarChart3, Activity, ArrowRight, Mic } from 'lucide-react';
+import { Send, MessageSquare, BarChart3, Activity, ArrowRight } from 'lucide-react';
 import AIOrb from './AIOrb';
 
 const Home = ({ onNavigateToChat, onCreateNewChat }) => {
   const { user } = useAuth();
   const [message, setMessage] = useState('');
-  const [isListening, setIsListening] = useState(false);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -89,13 +88,13 @@ const Home = ({ onNavigateToChat, onCreateNewChat }) => {
           {/* AI Orb and Greeting */}
           <div className="text-center mb-12">
             <div className="mb-8">
-              <AIOrb size={120} isListening={isListening} />
+              <AIOrb size={120} />
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               {getGreeting()}, {user?.firstName || user?.email?.split('@')[0] || 'there'}!
             </h2>
             <p className="text-xl text-gray-600 mb-8">
-              What can I help you with today?
+              What's on your mind?
             </p>
 
             {/* Quick Start Input */}
@@ -105,20 +104,9 @@ const Home = ({ onNavigateToChat, onCreateNewChat }) => {
                   type="text"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Type your message or click to speak..."
+                  placeholder="Ask me anything..."
                   className="w-full px-6 py-4 text-lg bg-white border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all duration-200 pr-14"
                 />
-                <button
-                  type="button"
-                  onClick={() => setIsListening(!isListening)}
-                  className={`absolute right-14 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-xl transition-all duration-200 flex items-center justify-center ${
-                    isListening 
-                      ? 'bg-red-500 text-white animate-pulse' 
-                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                  }`}
-                >
-                  <Mic className="w-5 h-5" />
-                </button>
                 <button
                   type="submit"
                   disabled={!message.trim()}

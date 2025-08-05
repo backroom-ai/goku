@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Trash2, MessageSquare, Bot, User, Edit3, Check, X } from 'lucide-react';
+import { Send, Plus, Trash2, MessageSquare, Bot, User } from 'lucide-react';
 import api from '../utils/api';
 
 const Chat = () => {
@@ -9,8 +9,6 @@ const Chat = () => {
   const [models, setModels] = useState([]);
   const [selectedModel, setSelectedModel] = useState('');
   const [loading, setLoading] = useState(false);
-  const [editingChatId, setEditingChatId] = useState(null);
-  const [editingTitle, setEditingTitle] = useState('');
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -61,7 +59,7 @@ const Chat = () => {
 
   const createNewChat = async () => {
     try {
-      const newChat = await api.createChat('Ask me anything...');
+      const newChat = await api.createChat();
       setChats([newChat, ...chats]);
       setCurrentChat({ ...newChat, messages: [] });
     } catch (error) {
@@ -69,40 +67,6 @@ const Chat = () => {
     }
   };
 
-  const updateChatTitle = async (chatId, newTitle) => {
-    try {
-      await api.updateChatTitle(chatId, newTitle);
-      setChats(chats.map(chat => 
-        chat.id === chatId ? { ...chat, title: newTitle } : chat
-      ));
-      if (currentChat?.id === chatId) {
-        setCurrentChat({ ...currentChat, title: newTitle });
-      }
-      setEditingChatId(null);
-      setEditingTitle('');
-    } catch (error) {
-      console.error('Failed to update chat title:', error);
-    }
-  };
-
-  const handleEditTitle = (chat) => {
-    setEditingChatId(chat.id);
-    setEditingTitle(chat.title);
-  };
-
-  const handleSaveTitle = () => {
-    if (editingTitle.trim() && editingTitle !== chats.find(c => c.id === editingChatId)?.title) {
-      updateChatTitle(editingChatId, editingTitle.trim());
-    } else {
-      setEditingChatId(null);
-      setEditingTitle('');
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingChatId(null);
-    setEditingTitle('');
-  };
   const deleteChat = async (chatId) => {
     try {
       await api.deleteChat(chatId);
@@ -207,50 +171,11 @@ const Chat = () => {
                   currentChat?.id === chat.id ? 'text-blue-600' : 'text-gray-400'
                 }`} />
                 <div className="min-w-0 flex-1">
-                  {editingChatId === chat.id ? (
-                    <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="text"
-                        value={editingTitle}
-                        onChange={(e) => setEditingTitle(e.target.value)}
-                        className="flex-1 text-sm font-medium bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') handleSaveTitle();
-                          if (e.key === 'Escape') handleCancelEdit();
-                        }}
-                        autoFocus
-                      />
-                      <button
-                        onClick={handleSaveTitle}
-                        className="text-green-600 hover:text-green-700 p-1"
-                      >
-                        <Check className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        className="text-red-600 hover:text-red-700 p-1"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center group">
-                      <p className={`text-sm font-medium truncate ${
-                        currentChat?.id === chat.id ? 'text-blue-900' : 'text-gray-900'
-                      }`}>
-                        {chat.title}
-                      </p>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditTitle(chat);
-                        }}
-                        className="ml-2 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition-all p-1"
-                      >
-                        <Edit3 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
+                  <p className={`text-sm font-medium truncate ${
+                    currentChat?.id === chat.id ? 'text-blue-900' : 'text-gray-900'
+                  }`}>
+                    {chat.title}
+                  </p>
                   <p className="text-xs text-gray-500">
                     {new Date(chat.updated_at).toLocaleDateString()}
                   </p>
@@ -277,17 +202,9 @@ const Chat = () => {
             {/* Chat header */}
             <div className="p-4 border-b border-gray-200 bg-white">
               <div className="flex items-center justify-between">
-                <div className="flex items-center group">
-                  <h1 className="text-lg font-semibold text-gray-900">
-                    {currentChat.title}
-                  </h1>
-                  <button
-                    onClick={() => handleEditTitle(currentChat)}
-                    className="ml-2 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition-all p-1"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                </div>
+                <h1 className="text-lg font-semibold text-gray-900">
+                  New Chat
+                </h1>
                 <div className="flex items-center space-x-3">
                   <select
                     value={selectedModel}
