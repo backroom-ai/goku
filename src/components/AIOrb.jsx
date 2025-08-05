@@ -1,75 +1,77 @@
 import React from 'react';
 
-const AIOrb = ({ size = 120 }) => {
+const AIOrb = ({ size = 120, isListening = false }) => {
   return (
     <div className="relative flex items-center justify-center">
-      {/* Outer glow ring */}
+      {/* Sound wave rings */}
       <div 
-        className="absolute rounded-full bg-gradient-to-r from-blue-400/20 to-purple-400/20 animate-pulse"
+        className={`absolute rounded-full border-2 border-blue-400/30 animate-ping ${isListening ? 'animate-pulse' : ''}`}
         style={{ 
-          width: size * 1.4, 
-          height: size * 1.4,
-          animationDuration: '3s'
+          width: size * 1.8, 
+          height: size * 1.8,
+          animationDuration: '2s'
         }}
       />
       
-      {/* Middle ring */}
+      {/* Second wave ring */}
       <div 
-        className="absolute rounded-full bg-gradient-to-r from-blue-500/30 to-purple-500/30 animate-spin"
+        className={`absolute rounded-full border-2 border-purple-400/20 animate-ping ${isListening ? 'animate-pulse' : ''}`}
         style={{ 
-          width: size * 1.2, 
-          height: size * 1.2,
-          animationDuration: '8s'
+          width: size * 1.5, 
+          height: size * 1.5,
+          animationDuration: '2.5s',
+          animationDelay: '0.3s'
         }}
       />
       
-      {/* Core orb */}
+      {/* Third wave ring */}
       <div 
-        className="relative rounded-full bg-gradient-to-br from-blue-500 to-purple-600 shadow-2xl animate-pulse"
+        className={`absolute rounded-full border border-blue-300/15 animate-ping ${isListening ? 'animate-pulse' : ''}`}
+        style={{ 
+          width: size * 2.2, 
+          height: size * 2.2,
+          animationDuration: '3s',
+          animationDelay: '0.6s'
+        }}
+      />
+      
+      {/* Core voice orb */}
+      <div 
+        className={`relative rounded-full bg-gradient-to-br from-blue-500 to-purple-600 shadow-2xl transition-all duration-300 ${
+          isListening ? 'animate-pulse scale-110' : 'animate-pulse'
+        }`}
         style={{ 
           width: size, 
           height: size,
-          animationDuration: '2s'
+          animationDuration: isListening ? '1s' : '3s'
         }}
       >
-        {/* Inner highlight */}
+        {/* Voice indicator highlight */}
         <div 
-          className="absolute top-4 left-4 rounded-full bg-white/30 blur-sm"
+          className="absolute top-3 left-3 rounded-full bg-white/40 blur-sm"
           style={{ 
-            width: size * 0.3, 
-            height: size * 0.3 
+            width: size * 0.25, 
+            height: size * 0.25 
           }}
         />
         
-        {/* Floating particles */}
-        <div className="absolute inset-0 rounded-full overflow-hidden">
-          {[...Array(6)].map((_, i) => (
+        {/* Sound wave particles */}
+        <div className="absolute inset-0 rounded-full overflow-hidden opacity-60">
+          {[...Array(8)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-1 h-1 bg-white/60 rounded-full animate-ping"
+              className={`absolute w-1 h-1 bg-white/70 rounded-full ${
+                isListening ? 'animate-bounce' : 'animate-ping'
+              }`}
               style={{
-                top: `${20 + (i * 10)}%`,
-                left: `${15 + (i * 12)}%`,
-                animationDelay: `${i * 0.5}s`,
-                animationDuration: '2s'
+                top: `${15 + (i * 8)}%`,
+                left: `${20 + (i * 8)}%`,
+                animationDelay: `${i * 0.2}s`,
+                animationDuration: isListening ? '0.8s' : '2s'
               }}
             />
           ))}
         </div>
-      </div>
-      
-      {/* Rotating outer ring */}
-      <div 
-        className="absolute rounded-full border-2 border-blue-300/40 animate-spin"
-        style={{ 
-          width: size * 1.6, 
-          height: size * 1.6,
-          animationDuration: '12s',
-          animationDirection: 'reverse'
-        }}
-      >
-        <div className="absolute top-0 left-1/2 w-2 h-2 bg-blue-400 rounded-full transform -translate-x-1/2 -translate-y-1" />
-        <div className="absolute bottom-0 left-1/2 w-2 h-2 bg-purple-400 rounded-full transform -translate-x-1/2 translate-y-1" />
       </div>
     </div>
   );

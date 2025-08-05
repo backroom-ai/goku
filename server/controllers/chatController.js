@@ -176,6 +176,34 @@ export const deleteChat = async (req, res) => {
   }
 };
 
+export const updateChatTitle = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { title } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
+    const result = await pool.query(
+      `UPDATE chats 
+       SET title = $1, updated_at = now() 
+       WHERE id = $2 AND user_id = $3 
+       RETURNING id, title, updated_at`,
+      [title.trim(), chatId, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Update chat title error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 export const getEnabledModels = async (req, res) => {
   try {
     const result = await pool.query(

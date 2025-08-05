@@ -176,8 +176,82 @@ class APIClient {
       body: JSON.stringify(keys),
     });
   }
+
+  async updateChatTitle(chatId, title) {
+    return this.request(`/chat/${chatId}/title`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title }),
+    });
+  }
+
+  // Knowledge methods
+  async getKnowledgeEntries() {
+    return this.request('/admin/knowledge');
+  }
+
+  async createKnowledgeEntry(formData) {
+    return this.request('/admin/knowledge', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        // Remove Content-Type to let browser set it with boundary for FormData
+        ...this.token && { Authorization: `Bearer ${this.token}` }
+      }
+    });
+  }
+
+  async updateKnowledgeEntry(entryId, updates) {
+    return this.request(`/admin/knowledge/${entryId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteKnowledgeEntry(entryId) {
+    return this.request(`/admin/knowledge/${entryId}`, {
+      method: 'DELETE',
+    });
+  }
+
   logout() {
     this.setToken(null);
+  }
+
+  async request(endpoint, options = {}) {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const config = {
+      ...options,
+    };
+
+    // Only set Content-Type for non-FormData requests
+    if (!(options.body instanceof FormData)) {
+      config.headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
+    } else {
+      config.headers = {
+        ...options.headers,
+      };
+    }
+
+    if (this.token) {
+      config.headers.Authorization = `Bearer ${this.token}`;
+    }
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'API request failed');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API request error:', error);
+      throw error;
+    }
   }
 }
 

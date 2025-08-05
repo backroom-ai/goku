@@ -5,6 +5,7 @@ import {
   getChat, 
   sendChatMessage, 
   deleteChat,
+  updateChatTitle,
   getEnabledModels
 } from '../controllers/chatController.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -19,6 +20,7 @@ router.post('/', createChat);
 router.get('/models', getEnabledModels);
 router.get('/:chatId', getChat);
 router.post('/:chatId/message', sendChatMessage);
+router.patch('/:chatId/title', updateChatTitle);
 router.delete('/:chatId', deleteChat);
 
 export default router;

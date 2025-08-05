@@ -15,6 +15,10 @@ const useSettingsStore = create((set, get) => ({
   apiKeys: {},
   apiKeysLoading: false,
   
+  // Knowledge state
+  knowledgeEntries: [],
+  knowledgeLoading: false,
+  
   // Actions
   loadUsers: async () => {
     set({ usersLoading: true });
@@ -133,6 +137,55 @@ const useSettingsStore = create((set, get) => ({
       set({ apiKeys: keys });
     } catch (error) {
       console.error('Failed to update API keys:', error);
+      throw error;
+    }
+  },
+  
+  loadKnowledgeEntries: async () => {
+    set({ knowledgeLoading: true });
+    try {
+      const entries = await api.getKnowledgeEntries();
+      set({ knowledgeEntries: entries, knowledgeLoading: false });
+    } catch (error) {
+      console.error('Failed to load knowledge entries:', error);
+      set({ knowledgeLoading: false });
+    }
+  },
+  
+  createKnowledgeEntry: async (formData) => {
+    try {
+      const newEntry = await api.createKnowledgeEntry(formData);
+      set(state => ({ knowledgeEntries: [newEntry, ...state.knowledgeEntries] }));
+      return newEntry;
+    } catch (error) {
+      console.error('Failed to create knowledge entry:', error);
+      throw error;
+    }
+  },
+  
+  updateKnowledgeEntry: async (entryId, updates) => {
+    try {
+      const updatedEntry = await api.updateKnowledgeEntry(entryId, updates);
+      set(state => ({
+        knowledgeEntries: state.knowledgeEntries.map(entry => 
+          entry.id === entryId ? updatedEntry : entry
+        )
+      }));
+      return updatedEntry;
+    } catch (error) {
+      console.error('Failed to update knowledge entry:', error);
+      throw error;
+    }
+  },
+  
+  deleteKnowledgeEntry: async (entryId) => {
+    try {
+      await api.deleteKnowledgeEntry(entryId);
+      set(state => ({
+        knowledgeEntries: state.knowledgeEntries.filter(entry => entry.id !== entryId)
+      }));
+    } catch (error) {
+      console.error('Failed to delete knowledge entry:', error);
       throw error;
     }
   }
