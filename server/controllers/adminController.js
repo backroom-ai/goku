@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt';
 import pool from '../config/database.js';
 
 export const getUsers = async (req, res) => {
@@ -11,6 +12,75 @@ export const getUsers = async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Get users error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const createUser = async (req, res) => {
+  try {
+    const { email, password, firstName, lastName, role = 'user' } = req.body;
+
+    if (!email || !password || !firstName || !lastName) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    if (!['admin', 'user'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    // Check if user already exists
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
+      [email.toLowerCase()]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    // Hash password
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Create user
+    const result = await pool.query(
+      `INSERT INTO users (email, password_hash, first_name, last_name, role) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING id, email, first_name, last_name, role, created_at`,
+      [email.toLowerCase(), passwordHash, firstName, lastName, role]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Create user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { email, firstName, lastName, role } = req.body;
+
+    const result = await pool.query(
+      `UPDATE users 
+       SET email = COALESCE($1, email),
+           first_name = COALESCE($2, first_name),
+           last_name = COALESCE($3, last_name),
+           role = COALESCE($4, role),
+           updated_at = now()
+       WHERE id = $5 
+       RETURNING id, email, first_name, last_name, role, created_at`,
+      [email, firstName, lastName, role, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Update user error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

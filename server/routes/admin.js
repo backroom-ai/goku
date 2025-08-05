@@ -1,6 +1,8 @@
 import express from 'express';
 import { 
   getUsers, 
+  createUser,
+  updateUser,
   updateUserRole, 
   getAllChats,
   getModelConfigs,
@@ -20,6 +22,8 @@ router.use(authenticateToken, requireAdmin);
 
 // User management
 router.get('/users', getUsers);
+router.post('/users', createUser);
+router.patch('/users/:userId', updateUser);
 router.patch('/users/:userId/role', updateUserRole);
 
 // Chat management

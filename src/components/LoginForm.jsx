@@ -3,14 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { Bot, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 
 const LoginForm = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin] = useState(true); // Always login mode
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    firstName: '',
-    lastName: '',
   });
   const [error, setError] = useState('');
 
@@ -24,8 +22,6 @@ const LoginForm = () => {
     try {
       if (isLogin) {
         await login(formData.email, formData.password);
-      } else {
-        await register(formData.email, formData.password, formData.firstName, formData.lastName);
       }
     } catch (err) {
       setError(err.message || 'An error occurred');
@@ -51,7 +47,7 @@ const LoginForm = () => {
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">TBridge</h1>
           <p className="text-gray-600">
-            {isLogin ? 'Sign in to your account' : 'Create your account'}
+            Sign in to your account
           </p>
         </div>
 
@@ -61,45 +57,6 @@ const LoginForm = () => {
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
-              </div>
-            )}
-
-            {!isLogin && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    First Name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                    <input
-                      type="text"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="John"
-                      required={!isLogin}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Last Name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Doe"
-                      required={!isLogin}
-                    />
-                  </div>
-                </div>
               </div>
             )}
 
@@ -157,23 +114,10 @@ const LoginForm = () => {
                   {isLogin ? 'Signing in...' : 'Creating account...'}
                 </div>
               ) : (
-                isLogin ? 'Sign In' : 'Create Account'
+                'Sign In'
               )}
             </button>
           </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError('');
-                setFormData({ email: '', password: '', firstName: '', lastName: '' });
-              }}
-              className="text-blue-600 hover:text-blue-700 transition-colors font-medium"
-            >
-              {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-            </button>
-          </div>
 
           {/* Demo credentials */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">

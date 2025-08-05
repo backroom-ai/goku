@@ -19,7 +19,8 @@
     "multer": "^2.0.2",
     "pdf-parse": "^1.1.1",
     "pg": "^8.11.3",
-    "ws": "^8.14.2"
+    "ws": "^8.14.2",
+    "zustand": "^5.0.7"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

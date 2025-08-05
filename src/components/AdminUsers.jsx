@@ -1,34 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, User, Search, Filter } from 'lucide-react';
-import api from '../utils/api';
+import { Users, Shield, User, Search, Filter, Plus, Mail, UserPlus } from 'lucide-react';
+import useSettingsStore from '../stores/settingsStore';
 
 const AdminUsers = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { 
+    users, 
+    usersLoading, 
+    loadUsers, 
+    createUser, 
+    updateUser, 
+    updateUserRole 
+  } = useSettingsStore();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newUser, setNewUser] = useState({
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    role: 'user'
+  });
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    loadUsers();
+    if (users.length === 0) {
+      loadUsers();
+    }
   }, []);
 
-  const loadUsers = async () => {
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setCreating(true);
     try {
-      const usersData = await api.getUsers();
-      setUsers(usersData);
+      await createUser(newUser);
+      setNewUser({
+        email: '',
+        password: '',
+        firstName: '',
+        lastName: '',
+        role: 'user'
+      });
+      setShowCreateForm(false);
     } catch (error) {
-      console.error('Failed to load users:', error);
+      console.error('Failed to create user:', error);
     } finally {
-      setLoading(false);
+      setCreating(false);
     }
   };
 
-  const updateUserRole = async (userId, newRole) => {
+  const handleUpdateUserRole = async (userId, newRole) => {
     try {
-      await api.updateUserRole(userId, newRole);
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, role: newRole } : user
-      ));
+      await updateUserRole(userId, newRole);
     } catch (error) {
       console.error('Failed to update user role:', error);
     }
@@ -41,7 +65,7 @@ const AdminUsers = () => {
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
-  if (loading) {
+  if (usersLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -53,14 +77,122 @@ const AdminUsers = () => {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-gray-200 bg-white">
-        <div className="flex items-center">
-          <Users className="w-6 h-6 text-blue-600 mr-3" />
-          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Users className="w-6 h-6 text-blue-600 mr-3" />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+              <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add User
+          </button>
         </div>
-        <p className="text-gray-600 mt-2">
-          Manage user accounts and permissions
-        </p>
       </div>
+
+      {/* Create User Form */}
+      {showCreateForm && (
+        <div className="p-6 border-b border-gray-200 bg-gray-50">
+          <div className="max-w-2xl">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Create New User</h2>
+            <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  value={newUser.firstName}
+                  onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  value={newUser.lastName}
+                  onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                  minLength={6}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Role
+                </label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="md:col-span-2 flex space-x-3">
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {creating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Create User
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="p-6 border-b border-gray-200 bg-white">
@@ -157,7 +289,7 @@ const AdminUsers = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <select
                       value={user.role}
-                      onChange={(e) => updateUserRole(user.id, e.target.value)}
+                      onChange={(e) => handleUpdateUserRole(user.id, e.target.value)}
                       className="px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="user">User</option>

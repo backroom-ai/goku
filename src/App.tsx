@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginForm from './components/LoginForm';
 import Layout from './components/Layout';
+import Home from './components/Home';
 import Chat from './components/Chat';
-import AdminUsers from './components/AdminUsers';
-import AdminModels from './components/AdminModels';
-import AdminApiKeys from './components/AdminApiKeys';
+import Settings from './components/Settings';
+import api from './utils/api';
 
 const AppContent = () => {
   const { isAuthenticated, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState('chat');
+  const [currentPage, setCurrentPage] = useState('home');
 
   if (loading) {
     return (
@@ -23,18 +23,46 @@ const AppContent = () => {
     return <LoginForm />;
   }
 
+  const handleNavigateToChat = () => {
+    setCurrentPage('chat');
+  };
+
+  const handleCreateNewChat = async (initialMessage = '') => {
+    try {
+      const newChat = await api.createChat();
+      setCurrentPage('chat');
+      
+      // If there's an initial message, we could store it and use it
+      // This would require updating the Chat component to handle initial messages
+      if (initialMessage) {
+        // Store the initial message for the chat component to use
+        sessionStorage.setItem('initialMessage', initialMessage);
+      }
+    } catch (error) {
+      console.error('Failed to create chat:', error);
+    }
+  };
+
   const renderPage = () => {
     switch (currentPage) {
+      case 'home':
+        return (
+          <Home 
+            onNavigateToChat={handleNavigateToChat}
+            onCreateNewChat={handleCreateNewChat}
+          />
+        );
       case 'chat':
         return <Chat />;
-      case 'admin-users':
-        return <AdminUsers />;
-      case 'admin-models':
-        return <AdminModels />;
-      case 'admin-api-keys':
-        return <AdminApiKeys />;
+      case 'settings':
+        return <Settings />;
       default:
-        return <Chat />;
+        return (
+          <Home 
+            onNavigateToChat={handleNavigateToChat}
+            onCreateNewChat={handleCreateNewChat}
+          />
+        );
     }
   };
 

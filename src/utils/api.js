@@ -112,6 +112,20 @@ class APIClient {
     return this.request('/admin/users');
   }
 
+  async createUser(userData) {
+    return this.request('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async updateUser(userId, updates) {
+    return this.request(`/admin/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
   async updateUserRole(userId, role) {
     return this.request(`/admin/users/${userId}/role`, {
       method: 'PATCH',

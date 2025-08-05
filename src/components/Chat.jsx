@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Trash2, MessageSquare, Bot, User, BarChart3, Activity, Zap } from 'lucide-react';
+import { Send, Plus, Trash2, MessageSquare, Bot, User } from 'lucide-react';
 import api from '../utils/api';
 
 const Chat = () => {
@@ -143,30 +143,6 @@ const Chat = () => {
       ));
   };
 
-  // Quick action cards for the home screen
-  const quickActions = [
-    {
-      title: 'New Chat',
-      description: 'Start a conversation with AI',
-      icon: MessageSquare,
-      action: createNewChat,
-      color: 'bg-blue-50 border-blue-200 hover:bg-blue-100'
-    },
-    {
-      title: 'Usage Stats',
-      description: 'View your chat statistics',
-      icon: BarChart3,
-      action: () => console.log('Usage stats'),
-      color: 'bg-green-50 border-green-200 hover:bg-green-100'
-    },
-    {
-      title: 'System Status',
-      description: 'Check AI model availability',
-      icon: Activity,
-      action: () => console.log('System status'),
-      color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
-    }
-  ];
   return (
     <div className="flex h-full">
       {/* Chat list sidebar */}
@@ -227,7 +203,7 @@ const Chat = () => {
             <div className="p-4 border-b border-gray-200 bg-white">
               <div className="flex items-center justify-between">
                 <h1 className="text-lg font-semibold text-gray-900">
-                  {currentChat.title}
+                  New Chat
                 </h1>
                 <div className="flex items-center space-x-3">
                   <select
@@ -329,35 +305,19 @@ const Chat = () => {
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gray-50">
             <div className="text-center max-w-4xl mx-auto px-6">
-              <Bot className="w-16 h-16 text-blue-600 mx-auto mb-6" />
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Welcome to TBridge
+              <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-6" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                No chat selected
               </h2>
-              <p className="text-lg text-gray-600 mb-12">
-                Your intelligent AI assistant platform. Get started with one of the quick actions below.
+              <p className="text-gray-600 mb-8">
+                Select a chat from the sidebar or create a new one to get started.
               </p>
-              
-              {/* Quick Actions Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {quickActions.map((action, index) => {
-                  const Icon = action.icon;
-                  return (
-                    <button
-                      key={index}
-                      onClick={action.action}
-                      className={`p-6 rounded-xl border-2 transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1 ${action.color}`}
-                    >
-                      <Icon className="w-8 h-8 mx-auto mb-4 text-gray-700" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {action.title}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {action.description}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
+              <button
+                onClick={createNewChat}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Create New Chat
+              </button>
             </div>
           </div>
         )}
