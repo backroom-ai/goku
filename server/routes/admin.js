@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import { 
   getUsers, 
   createUser,
@@ -7,6 +8,8 @@ import {
   getAllChats,
   getModelConfigs,
   updateModelConfig,
+  createModelConfig,
+  uploadPDF,
   getPromptTemplates,
   createPromptTemplate,
   deletePromptTemplate,
@@ -16,6 +19,7 @@ import {
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 // All routes require admin authentication
 router.use(authenticateToken, requireAdmin);
@@ -31,7 +35,11 @@ router.get('/chats', getAllChats);
 
 // Model configuration
 router.get('/models', getModelConfigs);
+router.post('/models', createModelConfig);
 router.patch('/models/:modelId', updateModelConfig);
+
+// File upload
+router.post('/upload-pdf', upload.single('file'), uploadPDF);
 
 // Prompt templates
 router.get('/templates', getPromptTemplates);

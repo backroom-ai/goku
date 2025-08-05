@@ -182,6 +182,94 @@ export const updateModelConfig = async (req, res) => {
   }
 };
 
+export const createModelConfig = async (req, res) => {
+  try {
+    const { 
+      model_name,
+      display_name,
+      provider,
+      enabled = false,
+      default_temperature = 0.7,
+      max_tokens = 4096,
+      system_prompt = 'You are a helpful AI assistant.',
+      api_endpoint
+    } = req.body;
+
+    if (!model_name || !display_name || !provider) {
+      return res.status(400).json({ error: 'Model name, display name, and provider are required' });
+    }
+
+    // Check if model already exists
+    const existingModel = await pool.query(
+      'SELECT id FROM model_configs WHERE model_name = $1',
+      [model_name]
+    );
+
+    if (existingModel.rows.length > 0) {
+      return res.status(400).json({ error: 'Model with this name already exists' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO model_configs (
+        model_name, display_name, provider, enabled, 
+        default_temperature, max_tokens, system_prompt, api_endpoint
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      RETURNING *`,
+      [model_name, display_name, provider, enabled, default_temperature, max_tokens, system_prompt, api_endpoint]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Create model config error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const uploadPDF = async (req, res) => {
+  try {
+    const { modelId } = req.body;
+    const file = req.file;
+
+    if (!file || !modelId) {
+      return res.status(400).json({ error: 'File and model ID are required' });
+    }
+
+    // Upload to n8n webhook
+    const formData = new FormData();
+    formData.append('file', file.buffer, file.originalname);
+    
+    const webhookResponse = await fetch('https://workflow.backroomop.com/webhook-test/file-uploads', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!webhookResponse.ok) {
+      throw new Error('Failed to upload to n8n webhook');
+    }
+
+    // Store PDF metadata in database
+    const result = await pool.query(
+      `INSERT INTO uploads (user_id, filename, original_name, file_type, file_size, file_path) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING *`,
+      [req.user.id, file.filename, file.originalname, file.mimetype, file.size, file.path]
+    );
+
+    res.json({
+      message: 'PDF uploaded successfully',
+      pdf: {
+        id: result.rows[0].id,
+        name: file.originalname,
+        size: file.size,
+        uploadedAt: result.rows[0].created_at
+      }
+    });
+  } catch (error) {
+    console.error('Upload PDF error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 export const getPromptTemplates = async (req, res) => {
   try {
     const result = await pool.query(

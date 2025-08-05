@@ -23,27 +23,40 @@ const AppContent = () => {
     return <LoginForm />;
   }
 
-  const handleNavigateToChat = () => {
+  const handleNavigateToChat = (chatId = null, initialMessage = '') => {
     setCurrentPage('chat');
+    // Store chat navigation data for the Chat component
+    if (chatId) {
+      sessionStorage.setItem('navigateToChatId', chatId);
+    }
+    if (initialMessage) {
+      sessionStorage.setItem('initialMessage', initialMessage);
+    }
   };
 
   const handleCreateNewChat = async (initialMessage = '') => {
     try {
       const newChat = await api.createChat();
-      setCurrentPage('chat');
       
-      // If there's an initial message, we could store it and use it
-      // This would require updating the Chat component to handle initial messages
-      if (initialMessage) {
-        // Store the initial message for the chat component to use
-        sessionStorage.setItem('initialMessage', initialMessage);
-      }
+      // Navigate to the new chat with initial message
+      handleNavigateToChat(newChat.id, initialMessage);
+      
+      return newChat;
     } catch (error) {
       console.error('Failed to create chat:', error);
     }
   };
 
   const renderPage = () => {
+    const initialChatId = sessionStorage.getItem('navigateToChatId');
+    const initialMessage = sessionStorage.getItem('initialMessage');
+    
+    // Clear stored navigation data
+    if (currentPage === 'chat') {
+      sessionStorage.removeItem('navigateToChatId');
+      sessionStorage.removeItem('initialMessage');
+    }
+    
     switch (currentPage) {
       case 'home':
         return (
@@ -53,7 +66,7 @@ const AppContent = () => {
           />
         );
       case 'chat':
-        return <Chat />;
+        return <Chat initialChatId={initialChatId} initialMessage={initialMessage} />;
       case 'settings':
         return <Settings />;
       default:

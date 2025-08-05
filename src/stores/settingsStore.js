@@ -10,6 +10,8 @@ const useSettingsStore = create((set, get) => ({
   models: [],
   modelsLoading: false,
   modelFilter: 'all', // 'all' | 'enabled' | 'disabled'
+  editingModel: null,
+  showModelModal: false,
   
   // API Keys state
   apiKeys: {},
@@ -92,6 +94,17 @@ const useSettingsStore = create((set, get) => ({
       throw error;
     }
   },
+
+  createModel: async (modelData) => {
+    try {
+      const newModel = await api.createModelConfig(modelData);
+      set(state => ({ models: [newModel, ...state.models] }));
+      return newModel;
+    } catch (error) {
+      console.error('Failed to create model:', error);
+      throw error;
+    }
+  },
   
   toggleModel: async (modelId, enabled) => {
     const model = get().models.find(m => m.id === modelId);
@@ -113,6 +126,43 @@ const useSettingsStore = create((set, get) => ({
         return models.filter(model => !model.enabled);
       default:
         return models;
+    }
+  },
+
+  setEditingModel: (model) => {
+    set({ editingModel: model, showModelModal: true });
+  },
+
+  setShowModelModal: (show) => {
+    set({ showModelModal: show, editingModel: show ? get().editingModel : null });
+  },
+
+  uploadPDF: async (modelId, file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('modelId', modelId);
+      
+      const response = await api.uploadPDF(formData);
+      
+      // Update model with new PDF
+      const model = get().models.find(m => m.id === modelId);
+      if (model) {
+        const updatedModel = {
+          ...model,
+          pdfs: [...(model.pdfs || []), response.pdf]
+        };
+        set(state => ({
+          models: state.models.map(m => 
+            m.id === modelId ? updatedModel : m
+          )
+        }));
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Failed to upload PDF:', error);
+      throw error;
     }
   },
   

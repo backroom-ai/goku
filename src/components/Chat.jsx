@@ -1,20 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Trash2, MessageSquare, Bot, User } from 'lucide-react';
+import { Send, Plus, Trash2, MessageSquare, Bot, User, Edit3, Check, X } from 'lucide-react';
 import api from '../utils/api';
 
-const Chat = () => {
+const Chat = ({ initialChatId, initialMessage }) => {
   const [chats, setChats] = useState([]);
   const [currentChat, setCurrentChat] = useState(null);
   const [message, setMessage] = useState('');
   const [models, setModels] = useState([]);
   const [selectedModel, setSelectedModel] = useState('');
   const [loading, setLoading] = useState(false);
+  const [chatsLoading, setChatsLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [editingChatId, setEditingChatId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState('');
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     loadChats();
     loadModels();
   }, []);
+
+  useEffect(() => {
+    if (initialChatId && chats.length > 0) {
+      loadChat(initialChatId);
+      if (initialMessage) {
+        setMessage(initialMessage);
+      }
+    }
+  }, [initialChatId, chats]);
 
   useEffect(() => {
     scrollToBottom();
@@ -25,6 +38,7 @@ const Chat = () => {
   };
 
   const loadChats = async () => {
+    setChatsLoading(true);
     try {
       const chatsData = await api.getChats();
       setChats(chatsData);
@@ -33,6 +47,8 @@ const Chat = () => {
       }
     } catch (error) {
       console.error('Failed to load chats:', error);
+    } finally {
+      setChatsLoading(false);
     }
   };
 
@@ -49,11 +65,14 @@ const Chat = () => {
   };
 
   const loadChat = async (chatId) => {
+    setMessagesLoading(true);
     try {
       const chatData = await api.getChat(chatId);
       setCurrentChat(chatData);
     } catch (error) {
       console.error('Failed to load chat:', error);
+    } finally {
+      setMessagesLoading(false);
     }
   };
 
@@ -65,6 +84,38 @@ const Chat = () => {
     } catch (error) {
       console.error('Failed to create chat:', error);
     }
+  };
+
+  const updateChatTitle = async (chatId, newTitle) => {
+    try {
+      await api.updateChatTitle(chatId, newTitle);
+      setChats(chats.map(chat => 
+        chat.id === chatId ? { ...chat, title: newTitle } : chat
+      ));
+      if (currentChat?.id === chatId) {
+        setCurrentChat({ ...currentChat, title: newTitle });
+      }
+    } catch (error) {
+      console.error('Failed to update chat title:', error);
+    }
+  };
+
+  const handleTitleEdit = (chatId, currentTitle) => {
+    setEditingChatId(chatId);
+    setEditingTitle(currentTitle);
+  };
+
+  const handleTitleSave = async (chatId) => {
+    if (editingTitle.trim() && editingTitle !== chats.find(c => c.id === chatId)?.title) {
+      await updateChatTitle(chatId, editingTitle.trim());
+    }
+    setEditingChatId(null);
+    setEditingTitle('');
+  };
+
+  const handleTitleCancel = () => {
+    setEditingChatId(null);
+    setEditingTitle('');
   };
 
   const deleteChat = async (chatId) => {
@@ -143,6 +194,26 @@ const Chat = () => {
       ));
   };
 
+  if (chatsLoading) {
+    return (
+      <div className="flex h-full">
+        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+          <div className="p-4 border-b border-gray-200">
+            <div className="w-full h-12 bg-gray-200 rounded-lg animate-pulse"></div>
+          </div>
+          <div className="flex-1 p-4 space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full">
       {/* Chat list sidebar */}
@@ -171,25 +242,74 @@ const Chat = () => {
                   currentChat?.id === chat.id ? 'text-blue-600' : 'text-gray-400'
                 }`} />
                 <div className="min-w-0 flex-1">
-                  <p className={`text-sm font-medium truncate ${
-                    currentChat?.id === chat.id ? 'text-blue-900' : 'text-gray-900'
-                  }`}>
-                    {chat.title}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(chat.updated_at).toLocaleDateString()}
-                  </p>
+                  {editingChatId === chat.id ? (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        className="flex-1 text-sm font-medium bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleTitleSave(chat.id);
+                          if (e.key === 'Escape') handleTitleCancel();
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTitleSave(chat.id);
+                        }}
+                        className="text-green-600 hover:text-green-700 p-1"
+                      >
+                        <Check className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTitleCancel();
+                        }}
+                        className="text-gray-400 hover:text-gray-600 p-1"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <p className={`text-sm font-medium truncate ${
+                        currentChat?.id === chat.id ? 'text-blue-900' : 'text-gray-900'
+                      }`}>
+                        {chat.title}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(chat.updated_at).toLocaleDateString()}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteChat(chat.id);
-                }}
-                className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {editingChatId !== chat.id && (
+                <div className="flex items-center space-x-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTitleEdit(chat.id, chat.title);
+                    }}
+                    className="text-gray-400 hover:text-blue-500 transition-colors p-1 rounded-md hover:bg-blue-50"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteChat(chat.id);
+                    }}
+                    className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -223,47 +343,63 @@ const Chat = () => {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
-              {currentChat.messages?.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex items-start space-x-3 ${
-                    msg.role === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {msg.role === 'assistant' && (
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-4 h-4 text-blue-600" />
-                    </div>
-                  )}
-                  
-                  <div
-                    className={`max-w-3xl p-4 rounded-lg ${
-                      msg.role === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-900 border border-gray-200'
-                    }`}
-                  >
-                    <div className={`prose max-w-none ${
-                      msg.role === 'user' ? 'prose-invert' : ''
-                    }`}>
-                      {formatContent(msg.content)}
-                    </div>
-                    {msg.model_used && (
-                      <div className={`mt-2 text-xs ${
-                        msg.role === 'user' ? 'text-blue-200' : 'text-gray-500'
-                      }`}>
-                        Model: {msg.model_used} • Tokens: {msg.tokens_used || 0}
+              {messagesLoading ? (
+                <div className="space-y-6">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
                       </div>
-                    )}
-                  </div>
-
-                  {msg.role === 'user' && (
-                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-gray-600" />
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <>
+                  {currentChat.messages?.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex items-start space-x-3 ${
+                        msg.role === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      {msg.role === 'assistant' && (
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Bot className="w-4 h-4 text-blue-600" />
+                        </div>
+                      )}
+                      
+                      <div
+                        className={`max-w-3xl p-4 rounded-lg ${
+                          msg.role === 'user'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white text-gray-900 border border-gray-200'
+                        }`}
+                      >
+                        <div className={`prose max-w-none ${
+                          msg.role === 'user' ? 'prose-invert' : ''
+                        }`}>
+                          {formatContent(msg.content)}
+                        </div>
+                        {msg.model_used && (
+                          <div className={`mt-2 text-xs ${
+                            msg.role === 'user' ? 'text-blue-200' : 'text-gray-500'
+                          }`}>
+                            Model: {msg.model_used} • Tokens: {msg.tokens_used || 0}
+                          </div>
+                        )}
+                      </div>
+
+                      {msg.role === 'user' && (
+                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                          <User className="w-4 h-4 text-gray-600" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
               {loading && (
                 <div className="flex items-start space-x-3">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">

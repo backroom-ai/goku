@@ -156,6 +156,38 @@ export const sendChatMessage = async (req, res) => {
   }
 };
 
+export const updateChatTitle = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { title } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
+    // Verify chat belongs to user
+    const chatResult = await pool.query(
+      'SELECT id FROM chats WHERE id = $1 AND user_id = $2',
+      [chatId, req.user.id]
+    );
+
+    if (chatResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+
+    // Update chat title
+    const result = await pool.query(
+      'UPDATE chats SET title = $1, updated_at = now() WHERE id = $2 RETURNING *',
+      [title.trim(), chatId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Update chat title error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 export const deleteChat = async (req, res) => {
   try {
     const { chatId } = req.params;

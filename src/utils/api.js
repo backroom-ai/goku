@@ -148,6 +148,29 @@ class APIClient {
     });
   }
 
+  async createModelConfig(config) {
+    return this.request('/admin/models', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    });
+  },
+
+  async updateChatTitle(chatId, title) {
+    return this.request(`/chat/${chatId}/title`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title }),
+    });
+  },
+
+  async uploadPDF(formData) {
+    return this.request('/admin/upload-pdf', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        // Don't set Content-Type for FormData, let browser set it
+      }
+    });
+  },
   async getPromptTemplates() {
     return this.request('/admin/templates');
   }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, Search, Filter, Edit3, Plus } from 'lucide-react';
 import useSettingsStore from '../stores/settingsStore';
+import ModelEditModal from './ModelEditModal';
 
 const AdminModels = () => {
   const { 
@@ -11,7 +12,10 @@ const AdminModels = () => {
     updateModel, 
     toggleModel, 
     setModelFilter, 
-    getFilteredModels 
+    getFilteredModels,
+    setEditingModel,
+    showModelModal,
+    setShowModelModal
   } = useSettingsStore();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,6 +30,14 @@ const AdminModels = () => {
     toggleModel(modelId, enabled);
   };
 
+  const handleEditModel = (model) => {
+    setEditingModel(model);
+  };
+
+  const handleAddModel = () => {
+    setEditingModel(null);
+    setShowModelModal(true);
+  };
   const filteredModels = getFilteredModels().filter(model => {
     const matchesSearch = model.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          model.model_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -47,12 +59,14 @@ const AdminModels = () => {
       case 'claude': return '🧠';
       case 'groq': return '⚡';
       case 'ollama': return '🏠';
+      case 'n8n': return '🔧';
       default: return '🔧';
     }
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <>
+      <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-gray-200 bg-white">
         <div className="flex items-center justify-between">
@@ -153,7 +167,10 @@ const AdminModels = () => {
                 </div>
               </div>
             ))}
-          </div>
+            <button 
+              onClick={handleAddModel}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
         </div>
         
         {filteredModels.length === 0 && (
@@ -171,8 +188,19 @@ const AdminModels = () => {
           </div>
         )}
       </div>
-    </div>
+      </div>
+
+      {/* Model Edit Modal */}
+      <ModelEditModal 
+        isOpen={showModelModal}
+        onClose={() => setShowModelModal(false)}
+      />
+    </>
   );
 };
 
 export default AdminModels;
+                      <button 
+                        onClick={() => handleEditModel(model)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100"
+                      >

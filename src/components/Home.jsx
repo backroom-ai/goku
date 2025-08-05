@@ -19,8 +19,11 @@ const Home = ({ onNavigateToChat, onCreateNewChat }) => {
     if (!message.trim()) return;
     
     // Create new chat and navigate
-    await onCreateNewChat(message);
+    const newChat = await onCreateNewChat(message);
     setMessage('');
+    
+    // Navigate to chat with the initial message
+    onNavigateToChat(newChat.id, message);
   };
 
   const exampleCards = [
