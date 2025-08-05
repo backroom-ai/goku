@@ -234,9 +234,13 @@ export const uploadPDF = async (req, res) => {
       return res.status(400).json({ error: 'File and model ID are required' });
     }
 
-    // Upload to n8n webhook
+    // Convert buffer to Blob for FormData
     const formData = new FormData();
-    formData.append('file', file.buffer, file.originalname);
+    console.log(file);
+    
+    // Create a Blob from the buffer
+    const blob = new Blob([file.buffer], { type: file.mimetype });
+    formData.append('file', blob, file.originalname);
     
     const webhookResponse = await fetch('https://workflow.backroomop.com/webhook-test/file-uploads', {
       method: 'POST',
