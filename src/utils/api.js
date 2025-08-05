@@ -160,7 +160,7 @@ class APIClient {
       method: 'PATCH',
       body: JSON.stringify({ title }),
     });
-  },
+  }
 
   async uploadPDF(formData) {
     return this.request('/admin/upload-pdf', {
@@ -170,7 +170,8 @@ class APIClient {
         // Don't set Content-Type for FormData, let browser set it
       }
     });
-  },
+  }
+  
   async getPromptTemplates() {
     return this.request('/admin/templates');
   }
