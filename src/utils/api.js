@@ -162,13 +162,23 @@ class APIClient {
     });
   }
 
-  async uploadPDF(formData) {
-    return this.request('/admin/upload-pdf', {
+  async uploadPDFs(formData) {
+    return this.request('/admin/upload-pdfs', {
       method: 'POST',
       body: formData,
       headers: {
         // Don't set Content-Type for FormData, let browser set it
       }
+    });
+  }
+
+  async getModelUploads(modelId) {
+    return this.request(`/admin/models/${modelId}/uploads`);
+  }
+
+  async deleteUpload(uploadId) {
+    return this.request(`/admin/uploads/${uploadId}`, {
+      method: 'DELETE'
     });
   }
   

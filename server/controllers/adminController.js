@@ -1,5 +1,21 @@
 import bcrypt from 'bcrypt';
 import pool from '../config/database.js';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+
+// Ensure uploads directory exists
+const ensureUploadsDir = async () => {
+  try {
+    await fs.access(uploadsDir);
+  } catch {
+    await fs.mkdir(uploadsDir, { recursive: true });
+  }
+};
 
 export const getUsers = async (req, res) => {
   try {
@@ -225,51 +241,152 @@ export const createModelConfig = async (req, res) => {
   }
 };
 
-export const uploadPDF = async (req, res) => {
+export const uploadPDFs = async (req, res) => {
   try {
     const { modelId } = req.body;
-    const file = req.file;
+    const files = req.files;
 
-    if (!file || !modelId) {
-      return res.status(400).json({ error: 'File and model ID are required' });
+    if (!files || files.length === 0 || !modelId) {
+      return res.status(400).json({ error: 'Files and model ID are required' });
     }
 
-    // Create FormData for webhook
-    const formData = new FormData();
-    const blob = new Blob([file.buffer], { type: file.mimetype });
-    formData.append('file', blob, file.originalname);
+    await ensureUploadsDir();
     
-    const webhookResponse = await fetch('https://workflow.backroomop.com/webhook-test/file-uploads', {
-      method: 'POST',
-      body: formData
-    });
+    const uploadedFiles = [];
+    const webhookFiles = [];
 
-    if (!webhookResponse.ok) {
-      throw new Error('Failed to upload to n8n webhook');
-    }
-
-    // Store PDF metadata in database
-    const filename = `${Date.now()}_${file.originalname}`;
-    const filePath = `/uploads/${filename}`;
-    
-    const result = await pool.query(
-      `INSERT INTO uploads (user_id, filename, original_name, file_type, file_size, file_path) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
-       RETURNING *`,
-      [req.user.id, filename, file.originalname, file.mimetype, file.size, filePath]
-    );
-
-    res.json({
-      message: 'PDF uploaded successfully',
-      pdf: {
+    // Process each file
+    for (const file of files) {
+      // Generate unique filename
+      const timestamp = Date.now();
+      const filename = `${timestamp}_${file.originalname}`;
+      const filePath = path.join(uploadsDir, filename);
+      const relativePath = `/uploads/${filename}`;
+      
+      // Save file to local storage
+      await fs.writeFile(filePath, file.buffer);
+      
+      // Store file metadata in database
+      const result = await pool.query(
+        `INSERT INTO uploads (user_id, filename, original_name, file_type, file_size, file_path, model_id) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7) 
+         RETURNING *`,
+        [req.user.id, filename, file.originalname, file.mimetype, file.size, relativePath, modelId]
+      );
+      
+      uploadedFiles.push({
         id: result.rows[0].id,
         name: file.originalname,
+        filename: filename,
         size: file.size,
+        type: file.mimetype,
+        url: `${req.protocol}://${req.get('host')}${relativePath}`,
         uploadedAt: result.rows[0].created_at
+      });
+      
+      // Prepare for webhook
+      webhookFiles.push({
+        filename: file.originalname,
+        content: file.buffer.toString('base64'),
+        mimetype: file.mimetype,
+        size: file.size
+      });
+    }
+
+    // Send all files to webhook in a single request
+    try {
+      const webhookPayload = {
+        modelId: modelId,
+        files: webhookFiles,
+        timestamp: new Date().toISOString()
+      };
+      
+      const webhookResponse = await fetch('https://workflow.backroomop.com/webhook-test/file-uploads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(webhookPayload)
+      });
+      
+      if (!webhookResponse.ok) {
+        console.warn('Webhook notification failed, but files were stored locally');
       }
+    } catch (webhookError) {
+      console.error('Webhook notification error:', webhookError);
+      // Continue execution - files are still stored locally
+    }
+    
+    res.json({
+      message: `${uploadedFiles.length} PDF(s) uploaded successfully`,
+      files: uploadedFiles
     });
   } catch (error) {
-    console.error('Upload PDF error:', error);
+    console.error('Upload PDFs error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getModelUploads = async (req, res) => {
+  try {
+    const { modelId } = req.params;
+    
+    const result = await pool.query(
+      `SELECT id, filename, original_name, file_type, file_size, file_path, created_at
+       FROM uploads 
+       WHERE model_id = $1 
+       ORDER BY created_at DESC`,
+      [modelId]
+    );
+    
+    const files = result.rows.map(file => ({
+      id: file.id,
+      name: file.original_name,
+      filename: file.filename,
+      size: file.file_size,
+      type: file.file_type,
+      url: `${req.protocol}://${req.get('host')}${file.file_path}`,
+      uploadedAt: file.created_at
+    }));
+    
+    res.json(files);
+  } catch (error) {
+    console.error('Get model uploads error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const deleteUpload = async (req, res) => {
+  try {
+    const { uploadId } = req.params;
+    
+    // Get file info before deletion
+    const fileResult = await pool.query(
+      'SELECT filename, file_path FROM uploads WHERE id = $1',
+      [uploadId]
+    );
+    
+    if (fileResult.rows.length === 0) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    const file = fileResult.rows[0];
+    
+    // Delete from database
+    await pool.query('DELETE FROM uploads WHERE id = $1', [uploadId]);
+    
+    // Delete physical file
+    try {
+      const filePath = path.join(__dirname, '..', file.file_path);
+      await fs.unlink(filePath);
+    } catch (fsError) {
+      console.warn('Failed to delete physical file:', fsError);
+      // Continue - database record is deleted
+    }
+    
+    res.json({ message: 'File deleted successfully' });
+  } catch (error) {
+    console.error('Delete upload error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

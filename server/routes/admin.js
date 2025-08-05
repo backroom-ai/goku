@@ -39,7 +39,9 @@ router.post('/models', createModelConfig);
 router.patch('/models/:modelId', updateModelConfig);
 
 // File upload
-router.post('/upload-pdf', upload.single('file'), uploadPDF);
+router.post('/upload-pdfs', upload.array('files', 10), uploadPDFs);
+router.get('/models/:modelId/uploads', getModelUploads);
+router.delete('/uploads/:uploadId', deleteUpload);
 
 // Prompt templates
 router.get('/templates', getPromptTemplates);

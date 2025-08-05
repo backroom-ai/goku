@@ -139,27 +139,40 @@ const useSettingsStore = create((set, get) => ({
     set({ showModelModal: show, editingModel: show ? get().editingModel : null });
   },
 
-  uploadPDF: async (modelId, file) => {
+  uploadPDFs: async (modelId, files) => {
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('modelId', modelId);
       
-      // Upload to n8n webhook
-      const webhookResponse = await fetch('https://workflow.backroomop.com/webhook-test/file-uploads', {
-        method: 'POST',
-        body: formData
-      });
-      
-      if (!webhookResponse.ok) {
-        throw new Error('Failed to upload to webhook');
+      // Append multiple files
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
       }
       
-      // Also save to our backend if needed
-      const response = await api.uploadPDF(formData);
+      // Upload to n8n webhook
+      const response = await api.uploadPDFs(formData);
       
       return response;
     } catch (error) {
-      console.error('Failed to upload PDF:', error);
+      console.error('Failed to upload PDFs:', error);
+      throw error;
+    }
+  },
+
+  getModelUploads: async (modelId) => {
+    try {
+      return await api.getModelUploads(modelId);
+    } catch (error) {
+      console.error('Failed to get model uploads:', error);
+      throw error;
+    }
+  },
+
+  deleteUpload: async (uploadId) => {
+    try {
+      return await api.deleteUpload(uploadId);
+    } catch (error) {
+      console.error('Failed to delete upload:', error);
       throw error;
     }
   },

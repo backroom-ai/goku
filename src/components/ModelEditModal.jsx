@@ -339,7 +339,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
                         <div className="flex items-center space-x-2">
                           <button
                             type="button"
-                            onClick={() => handleRemoveFile(index)}
+                            onClick={() => handleRemoveFile(file.id)}
                             className="text-red-600 hover:text-red-700 text-sm p-1 rounded hover:bg-red-50 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
