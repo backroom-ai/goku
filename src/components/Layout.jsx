@@ -17,7 +17,7 @@ const Layout = ({ children, currentPage, onPageChange }) => {
       {/* Minimalist Sidebar */}
       <div className="w-16 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
         {/* Logo */}
-        <div className="flex items-center justify-center py-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-center py-6">
           <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
             <Bot className="w-6 h-6 text-white" />
           </div>
@@ -51,7 +51,7 @@ const Layout = ({ children, currentPage, onPageChange }) => {
         </nav>
 
         {/* Bottom Section */}
-        <div className="px-3 py-6 space-y-3 border-t border-gray-200 dark:border-gray-700">
+        <div className="px-3 py-6 space-y-3">
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
