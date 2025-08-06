@@ -13,36 +13,37 @@ const Layout = ({ children, currentPage, onPageChange }) => {
   ];
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-all duration-500">
-      {/* Modern Sidebar */}
-      <div className="w-20 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-r border-slate-200/50 dark:border-slate-700/50 shadow-2xl flex flex-col">
+    <div className="flex h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
+      {/* Minimalist Sidebar */}
+      <div className="w-16 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
         {/* Logo */}
-        <div className="flex items-center justify-center py-6 border-b border-slate-200/50 dark:border-slate-700/50">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110">
-            <Bot className="w-7 h-7 text-white" />
+        <div className="flex items-center justify-center py-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+            <Bot className="w-6 h-6 text-white" />
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-8 space-y-4">
+        <nav className="flex-1 px-3 py-6 space-y-3">
           {navigation.map((item) => {
             const Icon = item.icon;
             return (
               <button
                 key={item.id}
                 onClick={() => onPageChange(item.id)}
-                className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all duration-300 group relative hover:scale-110 ${
+                className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors group relative ${
                   currentPage === item.id
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:shadow-xl'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
                 title={item.name}
               >
-                <Icon className="w-6 h-6" />
+                <Icon className="w-5 h-5" />
+                
                 {/* Tooltip */}
-                <div className="absolute left-full ml-4 px-4 py-2 bg-slate-900 dark:bg-slate-700 text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-50 shadow-2xl backdrop-blur-sm">
+                <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                   {item.name}
-                  <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-700 rotate-45"></div>
+                  <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
                 </div>
               </button>
             );
@@ -50,17 +51,18 @@ const Layout = ({ children, currentPage, onPageChange }) => {
         </nav>
 
         {/* Bottom Section */}
-        <div className="px-3 py-6 space-y-4 border-t border-slate-200/50 dark:border-slate-700/50">
+        <div className="px-3 py-6 space-y-3 border-t border-gray-200 dark:border-gray-700">
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="w-14 h-14 flex items-center justify-center rounded-2xl text-slate-500 dark:text-slate-400 hover:text-white hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 hover:shadow-xl transition-all duration-300 group relative hover:scale-110"
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group relative"
             title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
           >
-            {theme === 'light' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6" />}
-            <div className="absolute left-full ml-4 px-4 py-2 bg-slate-900 dark:bg-slate-700 text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-50 shadow-2xl backdrop-blur-sm">
+            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            
+            <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
               {theme === 'light' ? 'Dark mode' : 'Light mode'}
-              <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-700 rotate-45"></div>
+              <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
             </div>
           </button>
 
@@ -68,37 +70,39 @@ const Layout = ({ children, currentPage, onPageChange }) => {
           {isAdmin && (
             <button
               onClick={() => onPageChange('settings')}
-              className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all duration-300 group relative hover:scale-110 ${
+              className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors group relative ${
                 currentPage.startsWith('settings')
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:shadow-xl'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
               title="Settings"
             >
-              <Settings className="w-6 h-6" />
-              <div className="absolute left-full ml-4 px-4 py-2 bg-slate-900 dark:bg-slate-700 text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-50 shadow-2xl backdrop-blur-sm">
+              <Settings className="w-5 h-5" />
+              
+              <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                 Settings
-                <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-700 rotate-45"></div>
+                <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
               </div>
             </button>
           )}
 
           {/* User Profile */}
           <div className="flex flex-col items-center space-y-2">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110">
-              <span className="text-sm font-bold text-white">
+            <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 {user?.firstName?.[0] || user?.email?.[0] || 'U'}
               </span>
             </div>
             <button
               onClick={logout}
-              className="text-slate-400 dark:text-slate-500 hover:text-white hover:bg-gradient-to-r hover:from-red-500 hover:to-pink-500 transition-all duration-300 p-2 rounded-xl hover:shadow-lg group relative hover:scale-110"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-2 rounded-xl group relative"
               title="Sign out"
             >
-              <LogOut className="w-5 h-5" />
-              <div className="absolute left-full ml-4 px-4 py-2 bg-slate-900 dark:bg-slate-700 text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-50 shadow-2xl backdrop-blur-sm">
+              <LogOut className="w-4 h-4" />
+              
+              <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                 Sign out
-                <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-700 rotate-45"></div>
+                <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
               </div>
             </button>
           </div>
