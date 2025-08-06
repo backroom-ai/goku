@@ -97,7 +97,7 @@ class APIClient {
     
     // Add files to FormData
     files.forEach((fileObj, index) => {
-      formData.append(`file_${index}`, fileObj.file);
+      formData.append('files', fileObj.file);
       formData.append(`fileMetadata_${index}`, JSON.stringify({
         name: fileObj.name,
         size: fileObj.size,

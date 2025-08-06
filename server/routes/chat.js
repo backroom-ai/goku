@@ -12,6 +12,8 @@ import {
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Configure multer to accept any file field name
 const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: {
@@ -27,7 +29,7 @@ router.get('/', getChats);
 router.post('/', createChat);
 router.get('/models', getEnabledModels);
 router.get('/:chatId', getChat);
-router.post('/:chatId/message', upload.array('files'), sendChatMessage);
+router.post('/:chatId/message', upload.any(), sendChatMessage);
 router.patch('/:chatId/title', updateChatTitle);
 router.delete('/:chatId', deleteChat);
 

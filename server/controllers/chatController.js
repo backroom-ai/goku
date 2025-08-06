@@ -141,9 +141,8 @@ export const sendChatMessage = async (req, res) => {
     if (files.length > 0) {
       await ensureUploadsDir();
       
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const metadataKey = `fileMetadata_${i}`;
+      files.forEach((file, index) => {
+        const metadataKey = `fileMetadata_${index}`;
         let metadata = {};
         
         try {
@@ -158,20 +157,28 @@ export const sendChatMessage = async (req, res) => {
         const filename = `${timestamp}_${randomSuffix}_${metadata.name || file.originalname}`;
         const filePath = path.join(uploadsDir, filename);
         
-        // Save file to disk
-        await fs.writeFile(filePath, file.buffer);
-        
-        // Store attachment info
-        const attachment = {
-          name: metadata.name || file.originalname,
-          size: metadata.size || file.size,
-          type: metadata.type || file.mimetype,
-          filename: filename,
-          path: filePath
-        };
-        
-        attachments.push(attachment);
+        // Save file to disk (we'll do this synchronously in the loop)
+        attachments.push({
+          file,
+          metadata,
+          filename,
+          filePath
+        });
+      });
+      
+      // Save all files to disk
+      for (const attachment of attachments) {
+        await fs.writeFile(attachment.filePath, attachment.file.buffer);
       }
+      
+      // Process attachments for database storage
+      attachments = attachments.map(attachment => ({
+        name: attachment.metadata.name || attachment.file.originalname,
+        size: attachment.metadata.size || attachment.file.size,
+        type: attachment.metadata.type || attachment.file.mimetype,
+        filename: attachment.filename,
+        path: attachment.filePath
+      }));
     }
 
     // Store user message
