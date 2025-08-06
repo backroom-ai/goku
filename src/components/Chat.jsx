@@ -344,14 +344,13 @@ const Chat = () => {
           onClick={() => toggleSection(sectionKey)}
           className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
-          {expandedSections[sectionKey] ? (
-            <ChevronDown className="w-4 h-4 mr-2" />
-          ) : (
-            <ChevronRight className="w-4 h-4 mr-2" />
-          )}
           {title}
           <span className="ml-auto text-xs text-gray-400">
-            {chats.length}
+            {expandedSections[sectionKey] ? (
+              <ChevronDown className="w-4 h-4 mr-2" />
+            ) : (
+              <ChevronRight className="w-4 h-4 mr-2" />
+            )}
           </span>
         </button>
         
@@ -368,7 +367,6 @@ const Chat = () => {
                 onClick={() => loadChat(chat.id)}
               >
                 <div className="flex items-center flex-1 min-w-0">
-                  <MessageSquare className="w-4 h-4 mr-3 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
                     {editingChatId === chat.id ? (
                       <div className="flex items-center space-x-2">
