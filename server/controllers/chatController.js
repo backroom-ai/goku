@@ -77,11 +77,30 @@ export const getChat = async (req, res) => {
       [chatId]
     );
 
-    // Parse attachments JSON for each message
-    const messages = messagesResult.rows.map(msg => ({
-      ...msg,
-      attachments: msg.attachments ? JSON.parse(msg.attachments) : []
-    }));
+    // Parse attachments JSON for each message with proper error handling
+    const messages = messagesResult.rows.map(msg => {
+      let attachments = [];
+      
+      if (msg.attachments) {
+        try {
+          // Check if it's already an array (in case it's already parsed)
+          if (Array.isArray(msg.attachments)) {
+            attachments = msg.attachments;
+          } else if (typeof msg.attachments === 'string' && msg.attachments.trim()) {
+            attachments = JSON.parse(msg.attachments);
+          }
+        } catch (parseError) {
+          console.warn(`Failed to parse attachments for message ${msg.id}:`, parseError.message);
+          console.warn('Raw attachments data:', msg.attachments);
+          attachments = [];
+        }
+      }
+      
+      return {
+        ...msg,
+        attachments: attachments
+      };
+    });
 
     res.json({
       ...chatResult.rows[0],
