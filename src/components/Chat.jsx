@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Trash2, MessageSquare, Bot, User, Edit3, Check, X } from 'lucide-react';
+import { Send, Plus, Trash2, MessageSquare, Bot, User, Edit3, Check, X, Search, Settings, Share, MoreHorizontal } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 import api from '../utils/api';
 
 const Chat = () => {
+  const { theme } = useTheme();
   const [chats, setChats] = useState([]);
   const [currentChat, setCurrentChat] = useState(null);
   const [message, setMessage] = useState('');
@@ -13,26 +15,23 @@ const Chat = () => {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [editingChatId, setEditingChatId] = useState(null);
   const [editingTitle, setEditingTitle] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     loadChats();
     loadModels();
     
-    // Handle navigation from home screen
     const handleNavigation = () => {
       const initialChatId = sessionStorage.getItem('navigateToChatId');
       const initialMessage = sessionStorage.getItem('initialMessage');
       
       if (initialChatId && initialMessage) {
-        // Clear stored data
         sessionStorage.removeItem('navigateToChatId');
         sessionStorage.removeItem('initialMessage');
         
-        // Load the specific chat and set initial message
         loadChat(initialChatId).then(() => {
           setMessage(initialMessage);
-          // Auto-send the message
           setTimeout(() => {
             const form = document.querySelector('form');
             if (form) {
@@ -160,7 +159,6 @@ const Chat = () => {
     setMessage('');
     setLoading(true);
 
-    // Optimistically add user message to UI
     const optimisticUserMessage = {
       id: Date.now(),
       role: 'user',
@@ -176,21 +174,18 @@ const Chat = () => {
     try {
       const response = await api.sendMessage(currentChat.id, userMessage, selectedModel);
       
-      // Replace optimistic message with real messages from server
       setCurrentChat(prev => ({
         ...prev,
         messages: [
-          ...prev.messages.slice(0, -1), // Remove optimistic message
+          ...prev.messages.slice(0, -1),
           response.userMessage,
           response.aiMessage
         ]
       }));
 
-      // Update chat list
       loadChats();
     } catch (error) {
       console.error('Failed to send message:', error);
-      // Remove optimistic message on error
       setCurrentChat(prev => ({
         ...prev,
         messages: prev.messages.slice(0, -1)
@@ -201,7 +196,6 @@ const Chat = () => {
   };
 
   const formatContent = (content) => {
-    // Simple markdown-like formatting
     return content
       .split('\n')
       .map((line, index) => (
@@ -211,52 +205,73 @@ const Chat = () => {
       ));
   };
 
+  const filteredChats = chats.filter(chat =>
+    chat.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (chatsLoading) {
     return (
-      <div className="flex h-full">
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <div className="w-full h-12 bg-gray-200 rounded-lg animate-pulse"></div>
+      <div className="flex h-full bg-gray-50 dark:bg-dark-900">
+        <div className="w-80 bg-white dark:bg-dark-800 border-r border-gray-200 dark:border-dark-700 flex flex-col">
+          <div className="p-4 border-b border-gray-200 dark:border-dark-700">
+            <div className="w-full h-12 bg-gray-200 dark:bg-dark-700 rounded-xl animate-pulse"></div>
           </div>
           <div className="flex-1 p-4 space-y-4">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse"></div>
+              <div key={i} className="h-16 bg-gray-200 dark:bg-dark-700 rounded-xl animate-pulse"></div>
             ))}
           </div>
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full">
-      {/* Chat list sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <button
-            onClick={createNewChat}
-            className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Chat
-          </button>
+    <div className="flex h-full bg-gray-50 dark:bg-dark-900">
+      {/* Modern Chat Sidebar */}
+      <div className="w-80 bg-white dark:bg-dark-800 border-r border-gray-200 dark:border-dark-700 flex flex-col shadow-sm">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-200 dark:border-dark-700">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-100">Chats</h2>
+            <button
+              onClick={createNewChat}
+              className="p-2 text-gray-500 dark:text-dark-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200"
+              title="New Chat"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
+          
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-dark-500" />
+            <input
+              type="text"
+              placeholder="Search chats..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded-lg text-gray-900 dark:text-dark-100 placeholder-gray-500 dark:placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+            />
+          </div>
         </div>
 
+        {/* Chat List */}
         <div className="flex-1 overflow-y-auto">
-          {chats.map((chat) => (
+          {filteredChats.map((chat) => (
             <div
               key={chat.id}
-              className={`flex items-center justify-between p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
-                currentChat?.id === chat.id ? 'bg-blue-50 border-r-2 border-blue-600' : ''
+              className={`flex items-center justify-between p-4 border-b border-gray-100 dark:border-dark-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors ${
+                currentChat?.id === chat.id ? 'bg-primary-50 dark:bg-primary-900/20 border-r-2 border-primary-500' : ''
               }`}
               onClick={() => loadChat(chat.id)}
             >
               <div className="flex items-center flex-1 min-w-0">
                 <MessageSquare className={`w-4 h-4 mr-3 flex-shrink-0 ${
-                  currentChat?.id === chat.id ? 'text-blue-600' : 'text-gray-400'
+                  currentChat?.id === chat.id ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-dark-500'
                 }`} />
                 <div className="min-w-0 flex-1">
                   {editingChatId === chat.id ? (
@@ -265,7 +280,7 @@ const Chat = () => {
                         type="text"
                         value={editingTitle}
                         onChange={(e) => setEditingTitle(e.target.value)}
-                        className="flex-1 text-sm font-medium bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 text-sm font-medium bg-white dark:bg-dark-600 border border-gray-300 dark:border-dark-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-dark-100"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleTitleSave(chat.id);
                           if (e.key === 'Escape') handleTitleCancel();
@@ -277,7 +292,7 @@ const Chat = () => {
                           e.stopPropagation();
                           handleTitleSave(chat.id);
                         }}
-                        className="text-green-600 hover:text-green-700 p-1"
+                        className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 p-1"
                       >
                         <Check className="w-3 h-3" />
                       </button>
@@ -286,7 +301,7 @@ const Chat = () => {
                           e.stopPropagation();
                           handleTitleCancel();
                         }}
-                        className="text-gray-400 hover:text-gray-600 p-1"
+                        className="text-gray-400 dark:text-dark-500 hover:text-gray-600 dark:hover:text-dark-300 p-1"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -294,11 +309,11 @@ const Chat = () => {
                   ) : (
                     <>
                       <p className={`text-sm font-medium truncate ${
-                        currentChat?.id === chat.id ? 'text-blue-900' : 'text-gray-900'
+                        currentChat?.id === chat.id ? 'text-primary-900 dark:text-primary-100' : 'text-gray-900 dark:text-dark-100'
                       }`}>
                         {chat.title}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-dark-400">
                         {new Date(chat.updated_at).toLocaleDateString()}
                       </p>
                     </>
@@ -306,13 +321,13 @@ const Chat = () => {
                 </div>
               </div>
               {editingChatId !== chat.id && (
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleTitleEdit(chat.id, chat.title);
                     }}
-                    className="text-gray-400 hover:text-blue-500 transition-colors p-1 rounded-md hover:bg-blue-50"
+                    className="text-gray-400 dark:text-dark-500 hover:text-primary-500 dark:hover:text-primary-400 transition-colors p-1 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20"
                   >
                     <Edit3 className="w-3 h-3" />
                   </button>
@@ -321,7 +336,7 @@ const Chat = () => {
                       e.stopPropagation();
                       deleteChat(chat.id);
                     }}
-                    className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50"
+                    className="text-gray-400 dark:text-dark-500 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -332,21 +347,23 @@ const Chat = () => {
         </div>
       </div>
 
-      {/* Chat area */}
-      <div className="flex-1 flex flex-col">
+      {/* Chat Area */}
+      <div className="flex-1 flex flex-col bg-white dark:bg-dark-800">
         {currentChat ? (
           <>
-            {/* Chat header */}
-            <div className="p-4 border-b border-gray-200 bg-white">
+            {/* Chat Header */}
+            <div className="p-4 border-b border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-800">
               <div className="flex items-center justify-between">
-                <h1 className="text-lg font-semibold text-gray-900">
-                  New Chat
-                </h1>
+                <div className="flex items-center space-x-3">
+                  <h1 className="text-lg font-semibold text-gray-900 dark:text-dark-100">
+                    {currentChat.title}
+                  </h1>
+                </div>
                 <div className="flex items-center space-x-3">
                   <select
                     value={selectedModel}
                     onChange={(e) => setSelectedModel(e.target.value)}
-                    className="px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="px-3 py-2 bg-gray-50 dark:bg-dark-700 text-gray-900 dark:text-dark-100 border border-gray-200 dark:border-dark-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   >
                     {models.map((model) => (
                       <option key={model.model_name} value={model.model_name}>
@@ -354,20 +371,23 @@ const Chat = () => {
                       </option>
                     ))}
                   </select>
+                  <button className="p-2 text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-200 hover:bg-gray-50 dark:hover:bg-dark-700 rounded-lg transition-colors">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 dark:bg-dark-900">
               {messagesLoading ? (
                 <div className="space-y-6">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+                    <div key={i} className="flex items-start space-x-3 animate-fade-in">
+                      <div className="w-8 h-8 bg-gray-200 dark:bg-dark-700 rounded-full animate-pulse"></div>
                       <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                        <div className="h-4 bg-gray-200 dark:bg-dark-700 rounded animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 dark:bg-dark-700 rounded animate-pulse w-3/4"></div>
                       </div>
                     </div>
                   ))}
@@ -377,40 +397,40 @@ const Chat = () => {
                   {currentChat.messages?.map((msg) => (
                     <div
                       key={msg.id}
-                      className={`flex items-start space-x-3 ${
+                      className={`flex items-start space-x-3 animate-slide-up ${
                         msg.role === 'user' ? 'justify-end' : 'justify-start'
                       }`}
                     >
                       {msg.role === 'assistant' && (
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Bot className="w-4 h-4 text-blue-600" />
+                        <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Bot className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                         </div>
                       )}
                       
                       <div
-                        className={`max-w-3xl p-4 rounded-lg ${
+                        className={`max-w-3xl p-4 rounded-2xl shadow-sm ${
                           msg.role === 'user'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white text-gray-900 border border-gray-200'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-white dark:bg-dark-800 text-gray-900 dark:text-dark-100 border border-gray-200 dark:border-dark-700'
                         }`}
                       >
                         <div className={`prose max-w-none ${
-                          msg.role === 'user' ? 'prose-invert' : ''
+                          msg.role === 'user' ? 'prose-invert' : 'dark:prose-invert'
                         }`}>
                           {formatContent(msg.content)}
                         </div>
                         {msg.model_used && (
                           <div className={`mt-2 text-xs ${
-                            msg.role === 'user' ? 'text-blue-200' : 'text-gray-500'
+                            msg.role === 'user' ? 'text-primary-200' : 'text-gray-500 dark:text-dark-400'
                           }`}>
-                            Model: {msg.model_used} • Tokens: {msg.tokens_used || 0}
+                            {msg.model_used} • {msg.tokens_used || 0} tokens
                           </div>
                         )}
                       </div>
 
                       {msg.role === 'user' && (
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="w-4 h-4 text-gray-600" />
+                        <div className="w-8 h-8 bg-gray-200 dark:bg-dark-700 rounded-full flex items-center justify-center flex-shrink-0">
+                          <User className="w-4 h-4 text-gray-600 dark:text-dark-300" />
                         </div>
                       )}
                     </div>
@@ -418,15 +438,15 @@ const Chat = () => {
                 </>
               )}
               {loading && (
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-blue-600" />
+                <div className="flex items-start space-x-3 animate-fade-in">
+                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                    <Bot className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   </div>
-                  <div className="bg-white text-gray-900 p-4 rounded-lg shadow-sm border border-gray-200">
+                  <div className="bg-white dark:bg-dark-800 text-gray-900 dark:text-dark-100 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-dark-700">
                     <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                   </div>
                 </div>
@@ -434,21 +454,21 @@ const Chat = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Message input */}
-            <div className="p-4 border-t border-gray-200 bg-white">
+            {/* Message Input */}
+            <div className="p-4 border-t border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-800">
               <form onSubmit={sendMessage} className="flex space-x-3">
                 <input
                   type="text"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 px-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Ask me anything..."
+                  className="flex-1 px-4 py-3 bg-gray-50 dark:bg-dark-700 text-gray-900 dark:text-dark-100 border border-gray-200 dark:border-dark-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 placeholder-gray-500 dark:placeholder-dark-400 transition-colors"
                   disabled={loading}
                 />
                 <button
                   type="submit"
                   disabled={loading || !message.trim()}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -456,20 +476,22 @@ const Chat = () => {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
-            <div className="text-center max-w-4xl mx-auto px-6">
-              <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-6" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-dark-900">
+            <div className="text-center max-w-md mx-auto px-6">
+              <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <MessageSquare className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-100 mb-4">
                 No chat selected
               </h2>
-              <p className="text-gray-600 mb-8">
+              <p className="text-gray-600 dark:text-dark-400 mb-8">
                 Select a chat from the sidebar or create a new one to get started.
               </p>
               <button
                 onClick={createNewChat}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md"
               >
-                Create New Chat
+                Start New Chat
               </button>
             </div>
           </div>
