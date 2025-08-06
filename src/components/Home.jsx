@@ -94,10 +94,10 @@ const Home = ({ onNavigateToChat, onCreateNewChat }) => {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-4xl mx-auto px-6 py-12">
+        <div className="max-w-4xl mx-auto px-6 pt-0 pb-12">
           {/* AI Orb and Greeting */}
           <div className="text-center mb-12">
-            <div className="mb-8 flex justify-center">
+            <div className="flex justify-center">
               <AIOrb size={120} />
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">

@@ -400,17 +400,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
                           </button>
                         </div>
                       </div>
-                      
-                      {/* PDF Viewer */}
-                      {file.url && (
-                        <div className="h-96 bg-gray-100">
-                          <iframe
-                            src={file.url}
-                            className="w-full h-full border-0"
-                            title={`PDF Viewer - ${file.name}`}
-                          />
-                        </div>
-                      )}
+
                     </div>
                   ))}
                 </div>

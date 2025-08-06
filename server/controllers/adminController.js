@@ -257,26 +257,22 @@ export const uploadPDFs = async (req, res) => {
     await ensureUploadsDir();
     
     const uploadedFiles = [];
-    const webhookFiles = [];
 
-    // Process each file
+    // Process and save each file
     for (const file of files) {
       if (!file.originalname || !file.buffer) {
         console.warn('Skipping invalid file:', file);
         continue;
       }
 
-      // Generate unique filename
       const timestamp = Date.now();
       const randomSuffix = Math.random().toString(36).substring(2, 8);
       const filename = `${timestamp}_${randomSuffix}_${file.originalname}`;
       const filePath = path.join(uploadsDir, filename);
       const relativePath = `/uploads/${filename}`;
       
-      // Save file to local storage
       await fs.writeFile(filePath, file.buffer);
       
-      // Store file metadata in database
       const result = await pool.query(
         `INSERT INTO uploads (user_id, model_id, filename, original_name, file_type, file_size, file_path) 
          VALUES ($1, $2, $3, $4, $5, $6, $7) 
@@ -291,15 +287,8 @@ export const uploadPDFs = async (req, res) => {
         size: file.size,
         type: file.mimetype,
         url: `${req.protocol}://${req.get('host')}${relativePath}`,
-        uploadedAt: result.rows[0].created_at
-      });
-      
-      // Prepare for webhook
-      webhookFiles.push({
-        filename: file.originalname,
-        content: file.buffer.toString('base64'),
-        mimetype: file.mimetype,
-        size: file.size
+        uploadedAt: result.rows[0].created_at,
+        buffer: file.buffer // Keep buffer for webhook
       });
     }
 
@@ -307,40 +296,56 @@ export const uploadPDFs = async (req, res) => {
       return res.status(400).json({ error: 'No valid files were processed' });
     }
 
-    // Send all files to webhook in a single batch request
+    // Send files to webhook using native FormData with Blob
     try {
-      const webhookPayload = {
-        modelId: modelId,
-        files: webhookFiles,
-        uploadCount: webhookFiles.length,
-        timestamp: new Date().toISOString()
-      };
+      const formData = new FormData();
       
-      console.log(`Sending ${webhookFiles.length} files to webhook for model ${modelId}`);
+      // Add metadata
+      formData.append('modelId', modelId);
+      formData.append('uploadCount', uploadedFiles.length.toString());
+      formData.append('timestamp', new Date().toISOString());
+      
+      // Add each file by converting Buffer to Blob
+      uploadedFiles.forEach((file, index) => {
+        // Convert Buffer to Blob
+        const blob = new Blob([file.buffer], { type: file.type });
+        
+        formData.append(`file_${index}`, blob, file.name);
+        formData.append(`metadata_${index}`, JSON.stringify({
+          id: file.id,
+          filename: file.name,
+          size: file.size,
+          type: file.type
+        }));
+      });
+      
+      console.log(`Sending ${uploadedFiles.length} files to webhook via FormData`);
       
       const response = await fetch('https://workflow.backroomop.com/webhook-test/file-uploads', {
         method: 'POST',
+        body: formData,
         headers: {
-          'Content-Type': 'application/json',
           'User-Agent': 'TBridge-Server/1.0'
-        },
-        body: JSON.stringify(webhookPayload),
-        timeout: 30000 // 30 second timeout
+          // Don't set Content-Type header - let browser set it with boundary
+        }
       });
       
       if (!response.ok) {
-        console.warn(`Webhook notification failed (${response.status}), but files were stored locally`);
+        const errorText = await response.text();
+        console.warn(`Webhook notification failed (${response.status}): ${errorText}`);
       } else {
         console.log('Webhook notification sent successfully');
       }
     } catch (webhookError) {
       console.error('Webhook notification error:', webhookError);
-      // Continue execution - files are still stored locally
     }
+    
+    // Clean up buffer from response (don't send large buffers back to client)
+    const responseFiles = uploadedFiles.map(({buffer, ...file}) => file);
     
     res.json({
       message: `${uploadedFiles.length} PDF(s) uploaded successfully`,
-      files: uploadedFiles,
+      files: responseFiles,
       modelId: modelId
     });
   } catch (error) {
