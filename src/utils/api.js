@@ -90,10 +90,29 @@ class APIClient {
     return this.request(`/chat/${chatId}`);
   }
 
-  async sendMessage(chatId, content, modelName) {
+  async sendMessage(chatId, content, modelName, files = []) {
+    const formData = new FormData();
+    formData.append('content', content);
+    formData.append('modelName', modelName);
+    
+    // Add files to FormData
+    files.forEach((fileObj, index) => {
+      formData.append(`file_${index}`, fileObj.file);
+      formData.append(`fileMetadata_${index}`, JSON.stringify({
+        name: fileObj.name,
+        size: fileObj.size,
+        type: fileObj.type
+      }));
+    });
+    
+    formData.append('fileCount', files.length.toString());
+
     return this.request(`/chat/${chatId}/message`, {
       method: 'POST',
-      body: JSON.stringify({ content, modelName }),
+      body: formData,
+      headers: {
+        // Don't set Content-Type for FormData, let browser set it with boundary
+      }
     });
   }
 

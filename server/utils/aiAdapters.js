@@ -218,6 +218,7 @@ export const sendMessage = async (modelName, messages, options = {}) => {
       temperature: options.temperature || modelConfig.default_temperature,
       maxTokens: options.maxTokens || modelConfig.max_tokens,
       systemPrompt: options.systemPrompt || modelConfig.system_prompt,
+      attachments: options.attachments || [],
       ...options
     };
 

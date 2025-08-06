@@ -1,5 +1,21 @@
 import pool from '../config/database.js';
 import { sendMessage } from '../utils/aiAdapters.js';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.join(__dirname, '..', 'uploads', 'chat-attachments');
+
+// Ensure uploads directory exists
+const ensureUploadsDir = async () => {
+  try {
+    await fs.access(uploadsDir);
+  } catch {
+    await fs.mkdir(uploadsDir, { recursive: true });
+  }
+};
 
 export const getChats = async (req, res) => {
   try {
@@ -54,16 +70,22 @@ export const getChat = async (req, res) => {
 
     // Get messages
     const messagesResult = await pool.query(
-      `SELECT id, role, content, model_used, tokens_used, created_at 
+      `SELECT id, role, content, model_used, tokens_used, attachments, created_at 
        FROM messages 
        WHERE chat_id = $1 
        ORDER BY created_at ASC`,
       [chatId]
     );
 
+    // Parse attachments JSON for each message
+    const messages = messagesResult.rows.map(msg => ({
+      ...msg,
+      attachments: msg.attachments ? JSON.parse(msg.attachments) : []
+    }));
+
     res.json({
       ...chatResult.rows[0],
-      messages: messagesResult.rows
+      messages: messages
     });
   } catch (error) {
     console.error('Get chat error:', error);
@@ -74,10 +96,15 @@ export const getChat = async (req, res) => {
 export const sendChatMessage = async (req, res) => {
   try {
     const { chatId } = req.params;
-    const { content, modelName } = req.body;
+    const { content, modelName, fileCount } = req.body;
+    const files = req.files || [];
 
-    if (!content || !modelName) {
-      return res.status(400).json({ error: 'Content and model name are required' });
+    if ((!content || !content.trim()) && files.length === 0) {
+      return res.status(400).json({ error: 'Content or files are required' });
+    }
+
+    if (!modelName) {
+      return res.status(400).json({ error: 'Model name is required' });
     }
 
     // Verify chat belongs to user
@@ -90,12 +117,50 @@ export const sendChatMessage = async (req, res) => {
       return res.status(404).json({ error: 'Chat not found' });
     }
 
+    // Process uploaded files
+    let attachments = [];
+    if (files.length > 0) {
+      await ensureUploadsDir();
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const metadataKey = `fileMetadata_${i}`;
+        let metadata = {};
+        
+        try {
+          metadata = req.body[metadataKey] ? JSON.parse(req.body[metadataKey]) : {};
+        } catch (e) {
+          metadata = { name: file.originalname, size: file.size, type: file.mimetype };
+        }
+        
+        // Generate unique filename
+        const timestamp = Date.now();
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        const filename = `${timestamp}_${randomSuffix}_${metadata.name || file.originalname}`;
+        const filePath = path.join(uploadsDir, filename);
+        
+        // Save file to disk
+        await fs.writeFile(filePath, file.buffer);
+        
+        // Store attachment info
+        const attachment = {
+          name: metadata.name || file.originalname,
+          size: metadata.size || file.size,
+          type: metadata.type || file.mimetype,
+          filename: filename,
+          path: filePath
+        };
+        
+        attachments.push(attachment);
+      }
+    }
+
     // Store user message
     const userMessageResult = await pool.query(
-      `INSERT INTO messages (chat_id, role, content) 
-       VALUES ($1, $2, $3) 
+      `INSERT INTO messages (chat_id, role, content, attachments) 
+       VALUES ($1, $2, $3, $4) 
        RETURNING id, created_at`,
-      [chatId, 'user', content]
+      [chatId, 'user', content || '', JSON.stringify(attachments)]
     );
 
     // Get chat history for context
@@ -111,7 +176,7 @@ export const sendChatMessage = async (req, res) => {
 
     try {
       // Send to AI
-      const response = await sendMessage(modelName, messages);
+      const response = await sendMessage(modelName, messages, { attachments });
 
       // Store AI response
       const aiMessageResult = await pool.query(
@@ -131,7 +196,8 @@ export const sendChatMessage = async (req, res) => {
         userMessage: {
           id: userMessageResult.rows[0].id,
           role: 'user',
-          content,
+          content: content || '',
+          attachments: attachments,
           created_at: userMessageResult.rows[0].created_at
         },
         aiMessage: {

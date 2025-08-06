@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Trash2, MessageSquare, Bot, User, Edit3, Check, X, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { Send, Plus, Trash2, MessageSquare, Bot, User, Edit3, Check, X, Search, ChevronDown, ChevronRight, Paperclip, FileText, Image, File } from 'lucide-react';
 import api from '../utils/api';
 
 const Chat = () => {
@@ -19,6 +19,9 @@ const Chat = () => {
     yesterday: true,
     pastChats: true
   });
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -156,10 +159,12 @@ const Chat = () => {
 
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim() || !currentChat || !selectedModel || loading) return;
+    if ((!message.trim() && attachedFiles.length === 0) || !currentChat || !selectedModel || loading) return;
 
     const userMessage = message;
+    const files = [...attachedFiles];
     setMessage('');
+    setAttachedFiles([]);
     setLoading(true);
 
     const optimisticUserMessage = {
@@ -175,7 +180,7 @@ const Chat = () => {
     }));
 
     try {
-      const response = await api.sendMessage(currentChat.id, userMessage, selectedModel);
+      const response = await api.sendMessage(currentChat.id, userMessage, selectedModel, files);
       
       setCurrentChat(prev => ({
         ...prev,
@@ -196,6 +201,87 @@ const Chat = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    addFiles(files);
+  };
+
+  const addFiles = (files) => {
+    const validFiles = files.filter(file => {
+      // Allow common file types (max 10MB each)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = [
+        'text/plain',
+        'text/csv',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp'
+      ];
+      
+      if (file.size > maxSize) {
+        alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
+        return false;
+      }
+      
+      if (!allowedTypes.includes(file.type)) {
+        alert(`File type "${file.type}" is not supported.`);
+        return false;
+      }
+      
+      return true;
+    });
+
+    const newFiles = validFiles.map(file => ({
+      id: Date.now() + Math.random(),
+      file,
+      name: file.name,
+      size: file.size,
+      type: file.type
+    }));
+
+    setAttachedFiles(prev => [...prev, ...newFiles]);
+  };
+
+  const removeFile = (fileId) => {
+    setAttachedFiles(prev => prev.filter(f => f.id !== fileId));
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    addFiles(files);
+  };
+
+  const getFileIcon = (fileType) => {
+    if (fileType.startsWith('image/')) return <Image className="w-4 h-4" />;
+    if (fileType === 'application/pdf') return <FileText className="w-4 h-4" />;
+    if (fileType.includes('document') || fileType.includes('word')) return <FileText className="w-4 h-4" />;
+    return <File className="w-4 h-4" />;
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const formatContent = (content) => {
@@ -489,6 +575,19 @@ const Chat = () => {
                         <div className="prose max-w-none text-sm">
                           {formatContent(msg.content)}
                         </div>
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {msg.attachments.map((attachment, index) => (
+                              <div key={index} className={`flex items-center space-x-2 text-xs p-2 rounded ${
+                                msg.role === 'user' ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'
+                              }`}>
+                                {getFileIcon(attachment.type)}
+                                <span className="truncate">{attachment.name}</span>
+                                <span className="text-xs opacity-75">({formatFileSize(attachment.size)})</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         {msg.model_used && (
                           <div className={`mt-2 text-xs ${
                             msg.role === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
@@ -526,20 +625,75 @@ const Chat = () => {
             </div>
 
             {/* Message Input */}
-            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <div 
+              className={`px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 ${
+                isDragging ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600' : ''
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <div className="max-w-3xl mx-auto">
+                {/* Attached Files */}
+                {attachedFiles.length > 0 && (
+                  <div className="mb-4 space-y-2">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Attached files:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {attachedFiles.map((file) => (
+                        <div key={file.id} className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg">
+                          {getFileIcon(file.type)}
+                          <span className="text-sm truncate max-w-32">{file.name}</span>
+                          <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
+                          <button
+                            onClick={() => removeFile(file.id)}
+                            className="text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Drag and Drop Overlay */}
+                {isDragging && (
+                  <div className="absolute inset-0 bg-blue-50 dark:bg-blue-900/20 border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg flex items-center justify-center z-10">
+                    <div className="text-center">
+                      <Paperclip className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                      <p className="text-blue-600 dark:text-blue-400 font-medium">Drop files here to attach</p>
+                    </div>
+                  </div>
+                )}
+
                 <form onSubmit={sendMessage} className="flex space-x-4">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    multiple
+                    className="hidden"
+                    accept=".txt,.csv,.pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors flex items-center justify-center"
+                    title="Attach files"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </button>
                   <input
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Type a message..."
+                    placeholder={attachedFiles.length > 0 ? "Add a message (optional)..." : "Type a message..."}
                     className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
                     disabled={loading}
                   />
                   <button
                     type="submit"
-                    disabled={loading || !message.trim()}
+                    disabled={loading || (!message.trim() && attachedFiles.length === 0)}
                     className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                   >
                     <Send className="w-5 h-5" />
