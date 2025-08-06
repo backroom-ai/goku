@@ -13,12 +13,12 @@ const Layout = ({ children, currentPage, onPageChange }) => {
   ];
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-dark-900 dark:via-dark-800 dark:to-dark-900 transition-all duration-200">
-      {/* Glassmorphism Sidebar */}
-      <div className="w-16 backdrop-blur-xl bg-white/20 dark:bg-dark-800/20 border-r border-white/20 dark:border-dark-700/20 flex flex-col shadow-glass dark:shadow-glass-dark">
+    <div className="flex h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
+      {/* Minimalist Sidebar */}
+      <div className="w-16 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
         {/* Logo */}
         <div className="flex items-center justify-center py-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lift dark:shadow-lift-dark transform transition-all duration-200 hover:scale-105 hover:shadow-xl">
+          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
             <Bot className="w-6 h-6 text-white" />
           </div>
         </div>
@@ -31,19 +31,19 @@ const Layout = ({ children, currentPage, onPageChange }) => {
               <button
                 key={item.id}
                 onClick={() => onPageChange(item.id)}
-                className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 group relative transform hover:scale-105 hover:-translate-y-0.5 ${
+                className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors group relative ${
                   currentPage === item.id
-                    ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lift dark:shadow-lift-dark'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-white/30 dark:hover:bg-dark-700/30 backdrop-blur-sm'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
                 title={item.name}
               >
                 <Icon className="w-5 h-5" />
                 
-                {/* Enhanced Tooltip */}
-                <div className="absolute left-full ml-3 px-3 py-2 bg-white/90 dark:bg-dark-800/90 backdrop-blur-xl text-gray-900 dark:text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 shadow-glass dark:shadow-glass-dark border border-white/20 dark:border-dark-700/20 transform translate-x-2 group-hover:translate-x-0">
+                {/* Tooltip */}
+                <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                   {item.name}
-                  <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-white/90 dark:bg-dark-800/90 rotate-45 border-l border-b border-white/20 dark:border-dark-700/20"></div>
+                  <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
                 </div>
               </button>
             );
@@ -55,14 +55,14 @@ const Layout = ({ children, currentPage, onPageChange }) => {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-white/30 dark:hover:bg-dark-700/30 backdrop-blur-sm transition-all duration-200 group relative transform hover:scale-105 hover:-translate-y-0.5"
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group relative"
             title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
           >
             {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             
-            <div className="absolute left-full ml-3 px-3 py-2 bg-white/90 dark:bg-dark-800/90 backdrop-blur-xl text-gray-900 dark:text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 shadow-glass dark:shadow-glass-dark border border-white/20 dark:border-dark-700/20 transform translate-x-2 group-hover:translate-x-0">
+            <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
               {theme === 'light' ? 'Dark mode' : 'Light mode'}
-              <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-white/90 dark:bg-dark-800/90 rotate-45 border-l border-b border-white/20 dark:border-dark-700/20"></div>
+              <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
             </div>
           </button>
 
@@ -70,39 +70,39 @@ const Layout = ({ children, currentPage, onPageChange }) => {
           {isAdmin && (
             <button
               onClick={() => onPageChange('settings')}
-              className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 group relative transform hover:scale-105 hover:-translate-y-0.5 ${
+              className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors group relative ${
                 currentPage.startsWith('settings')
-                  ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lift dark:shadow-lift-dark'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-white/30 dark:hover:bg-dark-700/30 backdrop-blur-sm'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
               title="Settings"
             >
               <Settings className="w-5 h-5" />
               
-              <div className="absolute left-full ml-3 px-3 py-2 bg-white/90 dark:bg-dark-800/90 backdrop-blur-xl text-gray-900 dark:text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 shadow-glass dark:shadow-glass-dark border border-white/20 dark:border-dark-700/20 transform translate-x-2 group-hover:translate-x-0">
+              <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                 Settings
-                <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-white/90 dark:bg-dark-800/90 rotate-45 border-l border-b border-white/20 dark:border-dark-700/20"></div>
+                <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
               </div>
             </button>
           )}
 
           {/* User Profile */}
           <div className="flex flex-col items-center space-y-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lift dark:shadow-lift-dark transform transition-all duration-200 hover:scale-105">
-              <span className="text-sm font-medium text-white tracking-wide">
+            <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 {user?.firstName?.[0] || user?.email?.[0] || 'U'}
               </span>
             </div>
             <button
               onClick={logout}
-              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-all duration-200 p-2 rounded-xl group relative transform hover:scale-105 hover:-translate-y-0.5 hover:bg-white/20 dark:hover:bg-dark-700/20 backdrop-blur-sm"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-2 rounded-xl group relative"
               title="Sign out"
             >
               <LogOut className="w-4 h-4" />
               
-              <div className="absolute left-full ml-3 px-3 py-2 bg-white/90 dark:bg-dark-800/90 backdrop-blur-xl text-gray-900 dark:text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 shadow-glass dark:shadow-glass-dark border border-white/20 dark:border-dark-700/20 transform translate-x-2 group-hover:translate-x-0">
+              <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                 Sign out
-                <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-white/90 dark:bg-dark-800/90 rotate-45 border-l border-b border-white/20 dark:border-dark-700/20"></div>
+                <div className="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
               </div>
             </button>
           </div>
