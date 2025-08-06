@@ -52,6 +52,7 @@ const createTables = async () => {
       content text NOT NULL,
       model_used text,
       tokens_used integer DEFAULT 0,
+      attachments jsonb DEFAULT '[]'::jsonb,
       created_at timestamptz DEFAULT now()
     );
 
@@ -115,6 +116,7 @@ const createIndexes = async () => {
     CREATE INDEX IF NOT EXISTS idx_chats_created_at ON chats(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
     CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_messages_attachments ON messages USING gin(attachments);
     CREATE INDEX IF NOT EXISTS idx_uploads_user_id ON uploads(user_id);
     CREATE INDEX IF NOT EXISTS idx_model_configs_enabled ON model_configs(enabled);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
