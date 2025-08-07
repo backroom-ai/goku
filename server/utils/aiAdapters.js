@@ -658,7 +658,7 @@ class OllamaAdapter extends AIAdapter {
 }
 
 class N8NAdapter extends AIAdapter {
-  async sendMessage(messages, options = {}) {
+  async sendMessage(messages, options = {}, chatId) {
     const { systemPrompt, attachments = [] } = options;
     const sessionId = `session_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const latestMessage = messages && messages.length > 0 ? messages[messages.length - 1] : null;
@@ -672,15 +672,17 @@ class N8NAdapter extends AIAdapter {
         {
           messages,
           systemPrompt,
-          sessionId,
+          chatId: chatId || null,
           chatInput: latestMessage.content,
           attachments: processedAttachments,
           ...options
         }
       );
+      console.log('N8N Webhook response:', response.data);
+      console.log('N8N Webhook response:', response.data[0].output || response.data[0].content);
 
       return {
-        content: response.data.output || response.data.content,
+        content: response.data[0].output || response.data[0].content,
         tokensUsed: response.data.tokensUsed || 0
       };
     } catch (error) {
@@ -750,7 +752,7 @@ export const createAdapter = (modelConfig) => {
   }
 };
 
-export const sendMessage = async (modelName, messages, options = {}) => {
+export const sendMessage = async (modelName, messages, options = {}, chatId) => {
   try {
     // Get model configuration from database
     const result = await pool.query(
@@ -776,7 +778,7 @@ export const sendMessage = async (modelName, messages, options = {}) => {
 
     console.log('Sending message with options:', finalOptions);
 
-    return await adapter.sendMessage(messages, finalOptions);
+    return await adapter.sendMessage(messages, finalOptions, chatId);
   } catch (error) {
     console.error('AI adapter error:', error);
     throw error;

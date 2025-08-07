@@ -202,8 +202,8 @@ export const sendChatMessage = async (req, res) => {
 
     try {
       // Send to AI
-      const response = await sendMessage(modelName, messages, { attachments });
-
+      const response = await sendMessage(modelName, messages, { attachments }, chatId);
+      console.log('AI response:', modelName, chatId);
       // Store AI response
       const aiMessageResult = await pool.query(
         `INSERT INTO messages (chat_id, role, content, model_used, tokens_used) 
@@ -211,7 +211,7 @@ export const sendChatMessage = async (req, res) => {
          RETURNING id, created_at`,
         [chatId, 'assistant', response.content, modelName, response.tokensUsed]
       );
-
+      
       // Update chat timestamp
       await pool.query(
         'UPDATE chats SET updated_at = now() WHERE id = $1',
