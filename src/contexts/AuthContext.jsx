@@ -44,16 +44,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (email, password, firstName, lastName) => {
-    try {
-      const response = await api.register(email, password, firstName, lastName);
-      setUser(response.user);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  };
-
   const logout = () => {
     api.logout();
     setUser(null);
@@ -62,7 +52,6 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
-    register,
     logout,
     loading,
     isAuthenticated: !!user,

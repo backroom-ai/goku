@@ -12,7 +12,7 @@ const LoginForm = () => {
   });
   const [error, setError] = useState('');
 
-  const { login, register } = useAuth();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();

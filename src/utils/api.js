@@ -57,19 +57,6 @@ class APIClient {
     return response;
   }
 
-  async register(email, password, firstName, lastName) {
-    const response = await this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, firstName, lastName }),
-    });
-    
-    if (response.token) {
-      this.setToken(response.token);
-    }
-    
-    return response;
-  }
-
   async getProfile() {
     return this.request('/auth/profile');
   }

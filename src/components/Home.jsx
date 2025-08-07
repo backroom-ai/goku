@@ -50,12 +50,30 @@ const Home = ({ onNavigateToChat, onCreateNewChat }) => {
               Welcome back, {user?.firstName || user?.email?.split('@')[0] || 'there'}
             </h1>
             
-            <p className="text-lg text-gray-600 dark:text-gray-400 mb-12 font-normal">
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-24 font-normal">
               How can I help you today?
             </p>
 
+          {/* Example Prompts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-28">
+            {examplePrompts.map((prompt, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setMessage(prompt);
+                  handleQuickStart({ preventDefault: () => {} });
+                }}
+                className="p-4 text-left bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl transition-colors duration-200 group"
+              >
+                <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                  {prompt}
+                </span>
+              </button>
+            ))}
+          </div>
+
             {/* Input Section */}
-            <form onSubmit={handleQuickStart} className="mb-12">
+            <form onSubmit={handleQuickStart}>
               <div className="relative">
                 <input
                   type="text"
@@ -78,24 +96,6 @@ const Home = ({ onNavigateToChat, onCreateNewChat }) => {
                 </button>
               </div>
             </form>
-          </div>
-
-          {/* Example Prompts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {examplePrompts.map((prompt, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  setMessage(prompt);
-                  handleQuickStart({ preventDefault: () => {} });
-                }}
-                className="p-4 text-left bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl transition-colors duration-200 group"
-              >
-                <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                  {prompt}
-                </span>
-              </button>
-            ))}
           </div>
         </div>
       </div>

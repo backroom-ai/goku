@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Trash2, MessageSquare, Bot, User, Edit3, Check, X, Search, ChevronDown, ChevronRight, Paperclip, FileText, Image, File } from 'lucide-react';
+import { Send, Plus, Trash2, MessageSquare, Edit3, Check, X, Search, ChevronDown, ChevronRight, Paperclip, FileText, Image, File, Sparkle } from 'lucide-react';
 import api from '../utils/api';
 
 const Chat = () => {
@@ -513,20 +513,15 @@ const Chat = () => {
             {/* Chat Header */}
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
               <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {currentChat.title}
-                  </h1>
-                </div>
                 <div className="flex items-center space-x-3">
                   <select
                     value={selectedModel}
                     onChange={(e) => setSelectedModel(e.target.value)}
-                    className="px-3 py-2 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="px-3 py-2 bg-gray-50 font-semibold dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   >
                     {models.map((model) => (
                       <option key={model.model_name} value={model.model_name}>
-                        {model.display_name}
+                        {model.model_name}
                       </option>
                     ))}
                   </select>
@@ -557,12 +552,7 @@ const Chat = () => {
                         msg.role === 'user' ? 'justify-end' : 'justify-start'
                       }`}
                     >
-                      {msg.role === 'assistant' && (
-                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Bot className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        </div>
-                      )}
-                      
+                     
                       <div
                         className={`max-w-2xl px-4 py-3 rounded-2xl ${
                           msg.role === 'user'
@@ -594,20 +584,11 @@ const Chat = () => {
                           </div>
                         )}
                       </div>
-
-                      {msg.role === 'user' && (
-                        <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                        </div>
-                      )}
                     </div>
                   ))}
                   
                   {loading && (
                     <div className="flex items-start space-x-4">
-                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                        <Bot className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      </div>
                       <div className="bg-gray-100 dark:bg-gray-800 px-4 py-3 rounded-2xl">
                         <div className="flex items-center space-x-1">
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
@@ -685,7 +666,7 @@ const Chat = () => {
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder={attachedFiles.length > 0 ? "Add a message (optional)..." : "Type a message..."}
+                    placeholder={attachedFiles.length > 0 ? "Add a message (optional)..." : "Ask me anything..."}
                     className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
                     disabled={loading}
                   />

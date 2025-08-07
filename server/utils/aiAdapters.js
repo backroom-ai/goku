@@ -598,6 +598,8 @@ class OllamaAdapter extends AIAdapter {
         }
       );
 
+      console.log('Ollama response:', response.data);
+
       return {
         content: response.data.response,
         tokensUsed: 0 // Ollama doesn't provide token counts
