@@ -678,11 +678,10 @@ class N8NAdapter extends AIAdapter {
           ...options
         }
       );
-      console.log('N8N Webhook response:', response.data);
-      console.log('N8N Webhook response:', response.data[0].output || response.data[0].content);
+      console.log('N8N Webhook response:', response.data.output);
 
       return {
-        content: response.data[0].output || response.data[0].content,
+        content: response.data.output || response.data.content || response.data[0].output || response.data[0].content || 'No response generated',
         tokensUsed: response.data.tokensUsed || 0
       };
     } catch (error) {
