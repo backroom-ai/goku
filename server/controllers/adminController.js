@@ -312,16 +312,14 @@ export const uploadPDFs = async (req, res) => {
 
     // Get knowledge base for the region
     let knowledgeBaseId = null;
-    let webhookUrl = null;
     if (regionCode) {
       const kbResult = await pool.query(
-        'SELECT id, webhook_url FROM knowledge_bases WHERE model_id = $1 AND region_code = $2',
+        'SELECT id FROM knowledge_bases WHERE model_id = $1 AND region_code = $2',
         [modelId, regionCode]
       );
       
       if (kbResult.rows.length > 0) {
         knowledgeBaseId = kbResult.rows[0].id;
-        webhookUrl = kbResult.rows[0].webhook_url;
       }
     }
 
@@ -379,21 +377,14 @@ export const uploadPDFs = async (req, res) => {
       return res.status(400).json({ error: 'No valid files were processed' });
     }
 
-    // Send files to appropriate webhook (regional or general)
-    const targetWebhookUrl = webhookUrl || 'https://workflow.backroomop.com/webhook-test/file-uploads';
-    
+    // Send files to webhook using native FormData with Blob
     try {
       const formData = new FormData();
       
       // Add metadata
       formData.append('modelId', modelId);
-      if (regionCode) {
-        formData.append('regionCode', regionCode);
-        formData.append('region', regionCode);
-      }
       formData.append('uploadCount', uploadedFiles.length.toString());
       formData.append('timestamp', new Date().toISOString());
-      formData.append('userEmail', req.user.email);
       
       // Add each file by converting Buffer to Blob
       uploadedFiles.forEach((file, index) => {
@@ -405,44 +396,38 @@ export const uploadPDFs = async (req, res) => {
           id: file.id,
           filename: file.name,
           size: file.size,
-          type: file.type,
-          region: regionCode || 'general'
+          type: file.type
         }));
       });
       
-      console.log(`Sending ${uploadedFiles.length} files to ${regionCode ? `${regionCode} regional` : 'general'} webhook: ${targetWebhookUrl}`);
+      console.log(`Sending ${uploadedFiles.length} files to webhook via FormData`);
       
-      const response = await fetch(targetWebhookUrl, {
+      const response = await fetch('https://workflow.backroomop.com/webhook-test/file-uploads', {
         method: 'POST',
         body: formData,
         headers: {
-          'User-Agent': 'TBridge-Server/1.0',
-          'X-Region': regionCode || 'general',
-          'X-Model-Id': modelId
+          'User-Agent': 'TBridge-Server/1.0'
           // Don't set Content-Type header - let browser set it with boundary
         }
       });
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.warn(`${regionCode ? 'Regional' : 'General'} webhook notification failed (${response.status}): ${errorText}`);
+        console.warn(`Webhook notification failed (${response.status}): ${errorText}`);
       } else {
-        const responseText = await response.text();
-        console.log(`${regionCode ? 'Regional' : 'General'} webhook notification sent successfully:`, responseText);
+        console.log('Webhook notification sent successfully');
       }
     } catch (webhookError) {
-      console.error(`${regionCode ? 'Regional' : 'General'} webhook notification error:`, webhookError);
+      console.error('Webhook notification error:', webhookError);
     }
     
     // Clean up buffer from response (don't send large buffers back to client)
     const responseFiles = uploadedFiles.map(({buffer, ...file}) => file);
     
     res.json({
-      message: `${uploadedFiles.length} PDF(s) uploaded successfully${regionCode ? ` to ${regionCode} knowledge base` : ''}`,
+      message: `${uploadedFiles.length} PDF(s) uploaded successfully`,
       files: responseFiles,
-      modelId: modelId,
-      region: regionCode || 'general',
-      webhookUrl: targetWebhookUrl
+      modelId: modelId
     });
   } catch (error) {
     console.error('Upload PDFs error:', error);

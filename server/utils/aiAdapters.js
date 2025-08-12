@@ -659,7 +659,7 @@ class OllamaAdapter extends AIAdapter {
 
 class N8NAdapter extends AIAdapter {
   async sendMessage(messages, options = {}, chatId) {
-    const { systemPrompt, attachments = [], regionCode } = options;
+    const { systemPrompt, attachments = [] } = options;
     const sessionId = `session_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const latestMessage = messages && messages.length > 0 ? messages[messages.length - 1] : null;
     
@@ -667,33 +667,14 @@ class N8NAdapter extends AIAdapter {
       // Process attachments for N8N webhook
       const processedAttachments = await this.processAttachmentsForN8N(attachments);
       
-      // Determine webhook URL based on region for Goku model
-      let webhookUrl = this.config.api_endpoint;
-      
-      if (this.config.model_name === 'goku-saiyan-1' && regionCode) {
-        // Get regional webhook URL from database
-        const pool = await import('../config/database.js').then(m => m.default);
-        const result = await pool.query(
-          'SELECT webhook_url FROM knowledge_bases kb JOIN model_configs mc ON kb.model_id = mc.id WHERE mc.model_name = $1 AND kb.region_code = $2',
-          ['goku-saiyan-1', regionCode]
-        );
-        
-        if (result.rows.length > 0) {
-          webhookUrl = result.rows[0].webhook_url;
-          console.log(`Using regional webhook for ${regionCode}: ${webhookUrl}`);
-        }
-      }
-      
       const response = await axios.post(
-        webhookUrl,
+        this.config.api_endpoint,
         {
           messages,
           systemPrompt,
           chatId: chatId || null,
           chatInput: latestMessage.content,
           attachments: processedAttachments,
-          region: regionCode || 'general',
-          modelName: this.config.model_name,
           ...options
         }
       );

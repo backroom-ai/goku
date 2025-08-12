@@ -115,7 +115,7 @@ export const getChat = async (req, res) => {
 export const sendChatMessage = async (req, res) => {
   try {
     const { chatId } = req.params;
-    const { content, modelName, fileCount, regionCode } = req.body;
+    const { content, modelName, fileCount } = req.body;
     const files = req.files || [];
 
     if ((!content || !content.trim()) && files.length === 0) {
@@ -202,12 +202,7 @@ export const sendChatMessage = async (req, res) => {
 
     try {
       // Send to AI
-      const aiOptions = { attachments };
-      if (modelName === 'goku-saiyan-1' && regionCode) {
-        aiOptions.regionCode = regionCode;
-      }
-      
-      const response = await sendMessage(modelName, messages, aiOptions, chatId);
+      const response = await sendMessage(modelName, messages, { attachments }, chatId);
       console.log('AI response:', modelName, chatId);
       // Store AI response
       const aiMessageResult = await pool.query(

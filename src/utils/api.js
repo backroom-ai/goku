@@ -77,14 +77,10 @@ class APIClient {
     return this.request(`/chat/${chatId}`);
   }
 
-  async sendMessage(chatId, content, modelName, files = [], regionCode = null) {
+  async sendMessage(chatId, content, modelName, files = []) {
     const formData = new FormData();
     formData.append('content', content);
     formData.append('modelName', modelName);
-    
-    if (regionCode) {
-      formData.append('regionCode', regionCode);
-    }
     
     // Add files to FormData
     files.forEach((fileObj, index) => {

@@ -8,8 +8,6 @@ const Chat = () => {
   const [message, setMessage] = useState('');
   const [models, setModels] = useState([]);
   const [selectedModel, setSelectedModel] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState('');
-  const [availableRegions, setAvailableRegions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [chatsLoading, setChatsLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
@@ -57,20 +55,6 @@ const Chat = () => {
     scrollToBottom();
   }, [currentChat?.messages]);
 
-  useEffect(() => {
-    // Update available regions when model changes
-    const currentModel = models.find(m => m.model_name === selectedModel);
-    if (currentModel && currentModel.knowledge_bases) {
-      setAvailableRegions(currentModel.knowledge_bases);
-      // Auto-select first region for Goku model
-      if (currentModel.model_name === 'goku-saiyan-1' && currentModel.knowledge_bases.length > 0) {
-        setSelectedRegion(currentModel.knowledge_bases[0].region_code);
-      }
-    } else {
-      setAvailableRegions([]);
-      setSelectedRegion('');
-    }
-  }, [selectedModel, models]);
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -190,7 +174,6 @@ const Chat = () => {
 
     const userMessage = message;
     const files = [...attachedFiles];
-    const regionCode = selectedRegion;
     setMessage('');
     setAttachedFiles([]);
     setLoading(true);
@@ -214,7 +197,7 @@ const Chat = () => {
     }));
 
     try {
-      const response = await api.sendMessage(currentChat.id, userMessage, selectedModel, files, regionCode);
+      const response = await api.sendMessage(currentChat.id, userMessage, selectedModel, files);
       
       // Update current chat with server response
       setCurrentChat(prev => ({
@@ -718,21 +701,6 @@ const Chat = () => {
                       </option>
                     ))}
                   </select>
-                  
-                  {/* Region Selector for Goku Model */}
-                  {selectedModel === 'goku-saiyan-1' && availableRegions.length > 0 && (
-                    <select
-                      value={selectedRegion}
-                      onChange={(e) => setSelectedRegion(e.target.value)}
-                      className="px-3 py-2 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    >
-                      {availableRegions.map((region) => (
-                        <option key={region.region_code} value={region.region_code}>
-                          🌍 {region.region_name} ({region.region_code})
-                        </option>
-                      ))}
-                    </select>
-                  )}
                 </div>
               </div>
             </div>
