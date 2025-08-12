@@ -157,6 +157,17 @@ const Chat = () => {
     }
   };
 
+  // Helper function to update chat in the sidebar list
+  const updateChatInList = (updatedChat) => {
+    setChats(prevChats => 
+      prevChats.map(chat => 
+        chat.id === updatedChat.id 
+          ? { ...chat, title: updatedChat.title, updated_at: updatedChat.updated_at }
+          : chat
+      )
+    );
+  };
+
   const sendMessage = async (e) => {
     e.preventDefault();
     if ((!message.trim() && attachedFiles.length === 0) || !currentChat || !selectedModel || loading) return;
@@ -171,9 +182,15 @@ const Chat = () => {
       id: Date.now(),
       role: 'user',
       content: userMessage,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      attachments: files.map(f => ({
+        name: f.name,
+        size: f.size,
+        type: f.type
+      }))
     };
 
+    // Add user message immediately for better UX
     setCurrentChat(prev => ({
       ...prev,
       messages: [...prev.messages, optimisticUserMessage]
@@ -182,22 +199,34 @@ const Chat = () => {
     try {
       const response = await api.sendMessage(currentChat.id, userMessage, selectedModel, files);
       
+      // Update current chat with server response
       setCurrentChat(prev => ({
         ...prev,
         messages: [
-          ...prev.messages.slice(0, -1),
+          ...prev.messages.slice(0, -1), // Remove optimistic message
           response.userMessage,
           response.aiMessage
-        ]
+        ],
+        title: response.chat?.title || prev.title, // Update title if changed
+        updated_at: response.chat?.updated_at || new Date().toISOString()
       }));
 
-      loadChats();
+      // Update the chat in the sidebar list only if title or timestamp changed
+      if (response.chat) {
+        updateChatInList(response.chat);
+      }
+
     } catch (error) {
       console.error('Failed to send message:', error);
+      
+      // Remove optimistic message on error
       setCurrentChat(prev => ({
         ...prev,
         messages: prev.messages.slice(0, -1)
       }));
+      
+      // Show error message
+      alert('Failed to send message. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -285,13 +314,160 @@ const Chat = () => {
   };
 
   const formatContent = (content) => {
-    return content
-      .split('\n')
-      .map((line, index) => (
-        <p key={index} className="mb-2 last:mb-0">
-          {line}
-        </p>
-      ));
+    if (!content) return null;
+    
+    // Simple markdown-like formatting
+    const formatText = (text) => {
+      // Handle code blocks first (```code```)
+      text = text.replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg my-2 overflow-x-auto"><code>$1</code></pre>');
+      
+      // Handle inline code (`code`)
+      text = text.replace(/`([^`]+)`/g, '<code class="bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-sm">$1</code>');
+      
+      // Handle bold (**text** or __text__)
+      text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>');
+      text = text.replace(/__(.*?)__/g, '<strong class="font-semibold">$1</strong>');
+      
+      // Handle italic (*text* or _text_)
+      text = text.replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>');
+      text = text.replace(/_([^_]+)_/g, '<em class="italic">$1</em>');
+      
+      // Handle strikethrough (~~text~~)
+      text = text.replace(/~~(.*?)~~/g, '<del class="line-through">$1</del>');
+      
+      // Handle links [text](url)
+      text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-500 hover:text-blue-600 underline" target="_blank" rel="noopener noreferrer">$1</a>');
+      
+      return text;
+    };
+
+    // Split by lines and process each
+    const lines = content.split('\n');
+    const formattedLines = [];
+    let inList = false;
+    let listItems = [];
+
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      
+      // Handle headers
+      if (trimmedLine.startsWith('### ')) {
+        if (inList) {
+          formattedLines.push(
+            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
+              {listItems}
+            </ul>
+          );
+          listItems = [];
+          inList = false;
+        }
+        formattedLines.push(
+          <h3 key={index} className="text-lg font-semibold mt-4 mb-2">
+            {formatText(trimmedLine.substring(4))}
+          </h3>
+        );
+      } else if (trimmedLine.startsWith('## ')) {
+        if (inList) {
+          formattedLines.push(
+            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
+              {listItems}
+            </ul>
+          );
+          listItems = [];
+          inList = false;
+        }
+        formattedLines.push(
+          <h2 key={index} className="text-xl font-bold mt-4 mb-2">
+            {formatText(trimmedLine.substring(3))}
+          </h2>
+        );
+      } else if (trimmedLine.startsWith('# ')) {
+        if (inList) {
+          formattedLines.push(
+            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
+              {listItems}
+            </ul>
+          );
+          listItems = [];
+          inList = false;
+        }
+        formattedLines.push(
+          <h1 key={index} className="text-2xl font-bold mt-4 mb-2">
+            {formatText(trimmedLine.substring(2))}
+          </h1>
+        );
+      }
+      // Handle bullet points
+      else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ') || /^\d+\.\s/.test(trimmedLine)) {
+        const listContent = trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ') 
+          ? trimmedLine.substring(2) 
+          : trimmedLine.replace(/^\d+\.\s/, '');
+        
+        listItems.push(
+          <li key={`${index}-${listItems.length}`} 
+              dangerouslySetInnerHTML={{ __html: formatText(listContent) }} />
+        );
+        inList = true;
+      }
+      // Handle blockquotes
+      else if (trimmedLine.startsWith('> ')) {
+        if (inList) {
+          formattedLines.push(
+            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
+              {listItems}
+            </ul>
+          );
+          listItems = [];
+          inList = false;
+        }
+        formattedLines.push(
+          <blockquote key={index} className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-2 italic">
+            <div dangerouslySetInnerHTML={{ __html: formatText(trimmedLine.substring(2)) }} />
+          </blockquote>
+        );
+      }
+      // Handle empty lines
+      else if (trimmedLine === '') {
+        if (inList) {
+          formattedLines.push(
+            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
+              {listItems}
+            </ul>
+          );
+          listItems = [];
+          inList = false;
+        }
+        formattedLines.push(<br key={index} />);
+      }
+      // Handle regular paragraphs
+      else {
+        if (inList) {
+          formattedLines.push(
+            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
+              {listItems}
+            </ul>
+          );
+          listItems = [];
+          inList = false;
+        }
+        formattedLines.push(
+          <p key={index} className="mb-2 last:mb-0">
+            <span dangerouslySetInnerHTML={{ __html: formatText(line) }} />
+          </p>
+        );
+      }
+    });
+
+    // Handle any remaining list items
+    if (inList && listItems.length > 0) {
+      formattedLines.push(
+        <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
+          {listItems}
+        </ul>
+      );
+    }
+
+    return <div className="space-y-1">{formattedLines}</div>;
   };
 
   const categorizeChats = (chats) => {
