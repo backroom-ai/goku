@@ -666,6 +666,7 @@ class N8NAdapter extends AIAdapter {
     try {
       // Process attachments for N8N webhook
       const processedAttachments = await this.processAttachmentsForN8N(attachments);
+      console.log(this.config.api_endpoint, 'N8N Webhook URL:', this.config.api_endpoint);
       
       const response = await axios.post(
         this.config.api_endpoint,
