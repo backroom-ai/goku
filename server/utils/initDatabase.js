@@ -210,7 +210,7 @@ const insertDefaultData = async () => {
         await pool.query(`
           INSERT INTO knowledge_bases (model_id, region_code, region_name, webhook_url) VALUES
           ($1, 'NZ', 'New Zealand', 'https://workflow.backroomop.com/webhook/goku-nz'),
-          ($1, 'AU', 'Australia', 'https://workflow.backroomop.com/webhook/goku-au'),
+          ($1, 'AU', 'Australia', 'https://workflow.backroomop.com/webhook/file-uploads-au'),
           ($1, 'UK', 'United Kingdom', 'https://workflow.backroomop.com/webhook/goku-uk'),
           ($1, 'US', 'United States', 'https://workflow.backroomop.com/webhook/goku-us')
         `, [gokuModelId]);
