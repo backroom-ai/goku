@@ -140,6 +140,7 @@ const useSettingsStore = create((set, get) => ({
   },
 
   uploadPDFs: async (modelId, files) => {
+  }
   uploadPDFs: async (modelId, files, regionCode = null) => {
     try {
       const formData = new FormData();
