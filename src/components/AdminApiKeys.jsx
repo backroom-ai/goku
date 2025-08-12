@@ -183,7 +183,7 @@ const AdminApiKeys = () => {
                     value={apiKeys[config.key] || ''}
                     onChange={(e) => handleKeyChange(config.key, e.target.value)}
                     placeholder={config.placeholder}
-                    className="w-full px-4 py-3 pr-12 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full px-4 py-3 pr-12 bg-gray-50 dark:bg-[#141414] text-gray-900 dark:text-white rounded-lg focus:outline-none font-mono text-sm placeholder-gray-500 dark:placeholder-gray-400"
                   />
                   <button
                     type="button"
