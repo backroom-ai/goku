@@ -31,10 +31,10 @@ const Settings = () => {
   return (
     <div className="flex h-full">
       {/* Settings Sidebar */}
-      <div className="w-64 bg-white dark:bg-dark-800 border-r border-gray-200 dark:border-dark-700">
-        <div className="p-6 border-b border-gray-200 dark:border-dark-700">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-dark-100">Settings</h1>
-          <p className="text-sm text-gray-600 dark:text-dark-400 mt-1">Manage your TBridge configuration</p>
+      <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage your TBridge configuration</p>
         </div>
         
         <nav className="p-4 space-y-1">
@@ -46,8 +46,8 @@ const Settings = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   activeTab === tab.id
-                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                    : 'text-gray-700 dark:text-dark-300 hover:text-gray-900 dark:hover:text-dark-100 hover:bg-gray-50 dark:hover:bg-dark-700'
+                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
                 <Icon className="w-5 h-5 mr-3" />
