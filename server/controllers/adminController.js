@@ -185,6 +185,8 @@ export const updateModelConfig = async (req, res) => {
   try {
     const { modelId } = req.params;
     const { 
+      model_name,
+      display_name,
       enabled, 
       default_temperature, 
       max_tokens, 
@@ -209,15 +211,17 @@ export const updateModelConfig = async (req, res) => {
 
     const result = await pool.query(
       `UPDATE model_configs 
-       SET enabled = $1, 
-           default_temperature = $2, 
-           max_tokens = $3, 
-           system_prompt = $4, 
-           api_endpoint = $5, 
+       SET model_name = $1,
+           display_name = $2,
+           enabled = $3, 
+           default_temperature = $4, 
+           max_tokens = $5, 
+           system_prompt = $6, 
+           api_endpoint = $7, 
            updated_at = now()
-       WHERE id = $6 
+       WHERE id = $8 
        RETURNING *`,
-      [enabled, default_temperature, max_tokens, system_prompt, api_endpoint, modelId]
+      [model_name, display_name, enabled, default_temperature, max_tokens, system_prompt, api_endpoint, modelId]
     );
 
     res.json(result.rows);
