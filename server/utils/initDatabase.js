@@ -187,7 +187,7 @@ const insertDefaultData = async () => {
     if (parseInt(modelConfigsCheck.rows[0].count) === 0) {
       await pool.query(`
         INSERT INTO model_configs (model_name, display_name, provider, enabled, default_temperature, max_tokens, system_prompt) VALUES
-        ('gpt-4o-mini', 'GPT-4o Mini', 'openai', true, 0.7, 4096, 'You are a helpful AI assistant.'),
+        ('gpt-4.1-mini', 'GPT-4.1 Mini', 'openai', true, 0.7, 4096, 'You are a helpful AI assistant.'),
         ('claude-3-opus', 'Claude 3 Opus', 'claude', false, 0.7, 4096, 'You are a helpful AI assistant.'),
         ('claude-3-sonnet', 'Claude 3 Sonnet', 'claude', false, 0.7, 4096, 'You are a helpful AI assistant.'),
         ('claude-3-haiku', 'Claude 3 Haiku', 'claude', false, 0.7, 4096, 'You are a helpful AI assistant.'),
