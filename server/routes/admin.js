@@ -15,6 +15,7 @@ import {
   getPromptTemplates,
   createPromptTemplate,
   deletePromptTemplate,
+  deleteModelConfig,
   getApiKeys,
   updateApiKeys
 } from '../controllers/adminController.js';
