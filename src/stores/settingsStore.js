@@ -139,8 +139,6 @@ const useSettingsStore = create((set, get) => ({
     set({ showModelModal: show, editingModel: show ? get().editingModel : null });
   },
 
-  uploadPDFs: async (modelId, files) => {
-  }
   uploadPDFs: async (modelId, files, regionCode = null) => {
     try {
       const formData = new FormData();
