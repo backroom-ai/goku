@@ -185,9 +185,6 @@ export const updateModelConfig = async (req, res) => {
   try {
     const { modelId } = req.params;
     const { 
-      model_name,
-      display_name,
-      provider,
       enabled, 
       default_temperature, 
       max_tokens, 
@@ -210,80 +207,20 @@ export const updateModelConfig = async (req, res) => {
       return res.status(400).json({ error: 'Goku model cannot be disabled' });
     }
 
-    // Build dynamic update query
-    const updateFields = [];
-    const updateValues = [];
-    let paramIndex = 1;
-
-    if (model_name !== undefined) {
-      updateFields.push(`model_name = $${paramIndex}`);
-      updateValues.push(model_name);
-      paramIndex++;
-    }
-    
-    if (display_name !== undefined) {
-      updateFields.push(`display_name = $${paramIndex}`);
-      updateValues.push(display_name);
-      paramIndex++;
-    }
-    
-    if (provider !== undefined) {
-      updateFields.push(`provider = $${paramIndex}`);
-      updateValues.push(provider);
-      paramIndex++;
-    }
-    
-    if (enabled !== undefined) {
-      updateFields.push(`enabled = $${paramIndex}`);
-      updateValues.push(enabled);
-      paramIndex++;
-    }
-    
-    if (default_temperature !== undefined) {
-      updateFields.push(`default_temperature = $${paramIndex}`);
-      updateValues.push(default_temperature);
-      paramIndex++;
-    }
-    
-    if (max_tokens !== undefined) {
-      updateFields.push(`max_tokens = $${paramIndex}`);
-      updateValues.push(max_tokens);
-      paramIndex++;
-    }
-    
-    if (system_prompt !== undefined) {
-      updateFields.push(`system_prompt = $${paramIndex}`);
-      updateValues.push(system_prompt);
-      paramIndex++;
-    }
-    
-    if (api_endpoint !== undefined) {
-      updateFields.push(`api_endpoint = $${paramIndex}`);
-      updateValues.push(api_endpoint);
-      paramIndex++;
-    }
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    // Add updated_at and WHERE clause
-    updateFields.push(`updated_at = now()`);
-    updateValues.push(modelId);
-
     const result = await pool.query(
       `UPDATE model_configs 
-       SET ${updateFields.join(', ')}
-       WHERE id = $${paramIndex}
+       SET enabled = $1, 
+           default_temperature = $2, 
+           max_tokens = $3, 
+           system_prompt = $4, 
+           api_endpoint = $5, 
+           updated_at = now()
+       WHERE id = $6 
        RETURNING *`,
-      updateValues
+      [enabled, default_temperature, max_tokens, system_prompt, api_endpoint, modelId]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Model not found' });
-    }
-
-    res.json(result.rows[0]);
+    res.json(result.rows);
   } catch (error) {
     console.error('Update model config error:', error);
     res.status(500).json({ error: 'Internal server error' });
