@@ -194,7 +194,7 @@ const insertDefaultData = async () => {
         ('groq-llama2-70b', 'Llama 2 70B (Groq)', 'groq', false, 0.7, 4096, 'You are a helpful AI assistant.'),
         ('groq-mixtral-8x7b', 'Mixtral 8x7B (Groq)', 'groq', false, 0.7, 4096, 'You are a helpful AI assistant.'),
         ('ollama-llama3.1:latest', 'Llama 2 (Local)', 'ollama', false, 0.7, 2048, 'You are a helpful AI assistant.'),
-        ('goku-saiyan-1', 'Goku Saiyan 1', 'n8n', true, 0.7, 4096, 'You are Goku, a powerful and friendly AI assistant. You have access to regional knowledge bases and can help users with information specific to their region.', 'https://workflow.backroomop.com/webhook/goku-main')
+        ('goku-saiyan-1', 'Goku Saiyan 1', 'n8n', true, 0.7, 4096, 'You are Goku, a powerful and friendly AI assistant. You have access to regional knowledge bases and can help users with information specific to their region.')
       `);
       console.log('✅ Default model configurations created');
 
