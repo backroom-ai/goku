@@ -36,13 +36,13 @@ const Home = ({ onNavigateToChat, onCreateNewChat }) => {
   ];
 
   return (
-    <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 transition-colors duration-200">
+    <div className="flex-1 flex flex-col bg-white dark:bg-[#171717] transition-colors duration-200">
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center px-8">
         <div className="w-full max-w-2xl mx-auto">
           {/* Welcome Section */}
           <div className="text-center mb-16">
-            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-8">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-[#0d0d0d] rounded-2xl flex items-center justify-center mx-auto mb-8">
               <Sparkles className="w-8 h-8 text-gray-600 dark:text-gray-400" />
             </div>
             
@@ -63,7 +63,7 @@ const Home = ({ onNavigateToChat, onCreateNewChat }) => {
                   setMessage(prompt);
                   handleQuickStart({ preventDefault: () => {} });
                 }}
-                className="p-4 text-left bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl transition-colors duration-200 group"
+                className="p-4 text-left bg-gray-50 dark:bg-[#0d0d0d] hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-[#121212] rounded-xl transition-colors duration-200 group"
               >
                 <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                   {prompt}
@@ -81,12 +81,12 @@ const Home = ({ onNavigateToChat, onCreateNewChat }) => {
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Ask me anything..."
                   disabled={isCreating}
-                  className="w-full px-6 py-4 text-base bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-14 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"
+                  className="w-full px-6 py-4 text-base bg-gray-50 dark:bg-[#0d0d0d] border border-gray-200 dark:border-[#121212] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-14 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"
                 />
                 <button
                   type="submit"
                   disabled={!message.trim() || isCreating}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-lg disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-transparent text-gray-500 dark:text-gray-400 disabled:opacity-50 rounded-lg disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
                 >
                   {isCreating ? (
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>

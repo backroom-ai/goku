@@ -13,9 +13,9 @@ const Layout = ({ children, currentPage, onPageChange }) => {
   ];
 
   return (
-    <div className="flex h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
+    <div className="flex h-screen bg-white dark:bg-[#171717] transition-colors duration-200">
       {/* Minimalist Sidebar */}
-      <div className="w-16 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+      <div className="w-16 bg-gray-50 dark:bg-[#0d0d0d] border-r border-gray-200 dark:border-[#121212] flex flex-col">
         {/* Logo */}
         <div className="flex items-center justify-center py-6">
           <svg
@@ -84,8 +84,8 @@ const Layout = ({ children, currentPage, onPageChange }) => {
                 onClick={() => onPageChange(item.id)}
                 className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors group relative ${
                   currentPage === item.id
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? 'bg-[#171717] text-white'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#141414]'
                 }`}
                 title={item.name}
               >
@@ -123,7 +123,7 @@ const Layout = ({ children, currentPage, onPageChange }) => {
               onClick={() => onPageChange('settings')}
               className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors group relative ${
                 currentPage.startsWith('settings')
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-[#171717] text-white'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
               title="Settings"

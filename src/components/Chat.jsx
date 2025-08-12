@@ -537,8 +537,8 @@ const Chat = () => {
                 key={chat.id}
                 className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${
                   currentChat?.id === chat.id 
-                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' 
-                    : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                    ? 'bg-blue-50 dark:bg-[#171717] text-gray-700 dark:text-gray-300 dark:text-blue-300' 
+                    : 'hover:bg-gray-50 dark:hover:bg-[#141414] text-gray-700 dark:text-gray-300'
                 }`}
                 onClick={() => loadChat(chat.id)}
               >
@@ -615,9 +615,9 @@ const Chat = () => {
 
   if (chatsLoading) {
     return (
-      <div className="flex h-full bg-white dark:bg-gray-900">
-        <div className="w-80 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex h-full bg-white dark:bg-[#171717]">
+        <div className="w-80 bg-gray-50 dark:bg-[#0d0d0d] border-r border-gray-200 dark:border-[#121212] flex flex-col">
+          <div className="p-4 border-b border-gray-200 dark:border-[#121212]">
             <div className="w-full h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
           </div>
           <div className="flex-1 p-4 space-y-3">
@@ -634,11 +634,11 @@ const Chat = () => {
   }
 
   return (
-    <div className="flex h-full bg-white dark:bg-gray-900">
+    <div className="flex h-full bg-white dark:bg-[#171717]">
       {/* Sidebar */}
-      <div className="w-80 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+      <div className="w-80 bg-gray-50 dark:bg-[#0d0d0d] border-r border-gray-200 dark:border-[#121212] flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-200 dark:border-[#121212]">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Chats
@@ -660,7 +660,7 @@ const Chat = () => {
               placeholder="Search chats..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="w-full pl-10 pr-4 py-2 bg-transparent rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-transparent focus:border-transparent transition-colors"
             />
           </div>
         </div>
@@ -687,13 +687,13 @@ const Chat = () => {
         {currentChat ? (
           <>
             {/* Chat Header */}
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <select
                     value={selectedModel}
                     onChange={(e) => setSelectedModel(e.target.value)}
-                    className="px-3 py-2 bg-gray-50 font-semibold dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="px-3 py-2 bg-gray-50 font-semibold dark:bg-[#0d0d0d] text-gray-900 dark:text-white border border-gray-200 dark:border-[#121212] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   >
                     {models.map((model) => (
                       <option key={model.model_name} value={model.model_name}>
@@ -732,8 +732,8 @@ const Chat = () => {
                       <div
                         className={`max-w-2xl px-4 py-3 rounded-2xl ${
                           msg.role === 'user'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                            ? 'bg-[#262626] text-white'
+                            : 'bg-gray-100 dark:bg-[#0d0d0d] text-gray-900 dark:text-white'
                         }`}
                       >
                         <div className="prose max-w-none text-sm">
@@ -765,7 +765,7 @@ const Chat = () => {
                   
                   {loading && (
                     <div className="flex items-start space-x-4">
-                      <div className="bg-gray-100 dark:bg-gray-800 px-4 py-3 rounded-2xl">
+                      <div className="bg-gray-100 dark:bg-[#0d0d0d] px-4 py-3 rounded-2xl">
                         <div className="flex items-center space-x-1">
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -781,8 +781,8 @@ const Chat = () => {
 
             {/* Message Input */}
             <div 
-              className={`px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 ${
-                isDragging ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600' : ''
+              className={`px-6 py-4 border-t border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717] ${
+                isDragging ? 'bg-blue-50 dark:bg-[#171717] border-blue-300 dark:border-blue-600' : ''
               }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -795,7 +795,7 @@ const Chat = () => {
                     <div className="text-sm text-gray-600 dark:text-gray-400">Attached files:</div>
                     <div className="flex flex-wrap gap-2">
                       {attachedFiles.map((file) => (
-                        <div key={file.id} className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg">
+                        <div key={file.id} className="flex items-center space-x-2 bg-gray-100 dark:bg-[#0d0d0d] px-3 py-2 rounded-lg">
                           {getFileIcon(file.type)}
                           <span className="text-sm truncate max-w-32">{file.name}</span>
                           <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
@@ -813,7 +813,7 @@ const Chat = () => {
 
                 {/* Drag and Drop Overlay */}
                 {isDragging && (
-                  <div className="absolute inset-0 bg-blue-50 dark:bg-blue-900/20 border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg flex items-center justify-center z-10">
+                  <div className="absolute inset-0 bg-blue-50 dark:bg-[#171717] border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg flex items-center justify-center z-10">
                     <div className="text-center">
                       <Paperclip className="w-8 h-8 text-blue-500 mx-auto mb-2" />
                       <p className="text-blue-600 dark:text-blue-400 font-medium">Drop files here to attach</p>
@@ -833,7 +833,7 @@ const Chat = () => {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors flex items-center justify-center"
+                    className="px-3 py-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#121212] rounded-xl transition-colors flex items-center justify-center"
                     title="Attach files"
                   >
                     <Paperclip className="w-5 h-5" />
@@ -843,13 +843,13 @@ const Chat = () => {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder={attachedFiles.length > 0 ? "Add a message (optional)..." : "Ask me anything..."}
-                    className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
+                    className="flex-1 px-4 py-3 bg-gray-50 dark:bg-[#0d0d0d] text-gray-900 dark:text-white border border-gray-200 dark:border-[#121212] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
                     disabled={loading}
                   />
                   <button
                     type="submit"
                     disabled={loading || (!message.trim() && attachedFiles.length === 0)}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                    className="px-3 py-3 bg-transparent text-gray-500 dark:text-gray-400 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                   >
                     <Send className="w-5 h-5" />
                   </button>
@@ -860,7 +860,7 @@ const Chat = () => {
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center max-w-md mx-auto">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-[#0d0d0d] rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <MessageSquare className="w-8 h-8 text-gray-400" />
               </div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -871,7 +871,7 @@ const Chat = () => {
               </p>
               <button
                 onClick={createNewChat}
-                className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+                className="px-6 py-3 bg-[#171717] text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
               >
                 Start New Chat
               </button>

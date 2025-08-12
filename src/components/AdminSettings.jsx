@@ -76,7 +76,7 @@ const AdminSettings = () => {
           </div>
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center px-4 py-2 bg-[#171717] text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
             New Template
@@ -132,7 +132,7 @@ const AdminSettings = () => {
               <div className="flex space-x-3">
                 <button
                   type="submit"
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex items-center px-4 py-2 bg-[#171717] text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   Create Template

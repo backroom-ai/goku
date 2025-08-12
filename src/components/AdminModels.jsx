@@ -68,7 +68,7 @@ const AdminModels = () => {
     <>
       <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="p-6 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Bot className="w-6 h-6 text-blue-600 mr-3" />
@@ -79,7 +79,7 @@ const AdminModels = () => {
           </div>
           <button 
           onClick={handleAddModel}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          className="flex items-center px-4 py-2 bg-[#171717] text-white rounded-lg hover:bg-blue-700 transition-colors">
             <Plus className="w-4 h-4 mr-2" />
             Add Model
           </button>
@@ -87,7 +87,7 @@ const AdminModels = () => {
       </div>
 
       {/* Filters */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="p-6 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
         <div className="flex flex-col sm:flex-row gap-4 items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -120,15 +120,15 @@ const AdminModels = () => {
       </div>
 
       {/* Models */}
-      <div className="flex-1 overflow-auto p-6 space-y-6 bg-gray-50 dark:bg-gray-900">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+      <div className="flex-1 overflow-auto p-6 space-y-6 bg-gray-50 dark:bg-[#171717]">
+        <div className="bg-white dark:bg-[#0d0d0d] rounded-lg shadow-sm">
+          <div className="divide-y divide-gray-200 dark:divide-[#121212]">
             {filteredModels.map((model) => (
-              <div key={model.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <div key={model.id} className="p-6 hover:bg-gray-50 dark:hover:bg-[#171717] transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     {/* Model Icon */}
-                    <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-xl">
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-[#171717] rounded-lg flex items-center justify-center text-xl">
                       {getModelIcon(model.provider)}
                     </div>
                     
@@ -190,7 +190,7 @@ const AdminModels = () => {
                         disabled={model.model_name === 'goku-saiyan-1' && model.enabled}
                       />
                       <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                        model.enabled ? 'bg-blue-600' : 'bg-gray-300'
+                        model.enabled ? 'bg-green-400' : 'bg-gray-300'
                       }`}>
                         <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
                           model.enabled ? 'translate-x-5' : 'translate-x-0'
@@ -205,7 +205,7 @@ const AdminModels = () => {
         </div>
         
         {filteredModels.length === 0 && (
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="text-center py-12 bg-white dark:bg-[#0d0d0d] rounded-lg border border-gray-200 dark:border-[#121212] shadow-sm">
             <Bot className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               {models.length === 0 ? 'No models found' : 'No matching models'}

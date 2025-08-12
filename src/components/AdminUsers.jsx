@@ -76,7 +76,7 @@ const AdminUsers = () => {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="p-6 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Users className="w-6 h-6 text-blue-600 mr-3" />
@@ -87,7 +87,7 @@ const AdminUsers = () => {
           </div>
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center px-4 py-2 bg-[#171717] text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add User
@@ -97,7 +97,7 @@ const AdminUsers = () => {
 
       {/* Create User Form */}
       {showCreateForm && (
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="p-6 border-b border-gray-200 dark:border-[#121212] bg-gray-50 dark:bg-[#0d0d0d]">
           <div className="max-w-2xl">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New User</h2>
             <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -167,7 +167,7 @@ const AdminUsers = () => {
                 <button
                   type="submit"
                   disabled={creating}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center px-4 py-2 bg-[#171717] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {creating ? (
                     <>
@@ -195,7 +195,7 @@ const AdminUsers = () => {
       )}
 
       {/* Filters */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="p-6 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -222,8 +222,8 @@ const AdminUsers = () => {
         </div>
       </div>
       {/* Users table */}
-      <div className="flex-1 overflow-auto p-6 bg-gray-50 dark:bg-gray-900">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+      <div className="flex-1 overflow-auto p-6 bg-gray-50 dark:bg-[#171717]">
+        <div className="bg-white dark:bg-[#0d0d0d] rounded-lg border border-gray-200 dark:border-[#121212] overflow-hidden shadow-sm">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
@@ -303,7 +303,7 @@ const AdminUsers = () => {
         </div>
 
         {filteredUsers.length === 0 && (
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="text-center py-12 bg-white dark:bg-[#0d0d0d] rounded-lg border border-gray-200 dark:border-[#121212] shadow-sm">
             <Users className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               {users.length === 0 ? 'No users found' : 'No matching users'}

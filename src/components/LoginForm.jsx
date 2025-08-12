@@ -107,7 +107,7 @@ const LoginForm = () => {
 
 
         {/* Form */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+        <div className="bg-white dark:bg-[#0d0d0d] rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-[#121212] transition-colors duration-200">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
@@ -175,7 +175,7 @@ const LoginForm = () => {
           </form>
 
           {/* Demo credentials */}
-          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="mt-6 p-4 bg-blue-50 dark:bg-[#171717] rounded-lg border border-blue-200 dark:border-blue-800">
             <p className="text-sm text-blue-900 dark:text-blue-100 mb-2 font-medium">Demo credentials:</p>
             <p className="text-xs text-blue-700 dark:text-blue-300">Email: admin@example.com</p>
             <p className="text-xs text-blue-700 dark:text-blue-300">Password: admin123</p>

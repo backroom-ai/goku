@@ -102,7 +102,7 @@ const AdminApiKeys = () => {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="p-6 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Key className="w-6 h-6 text-blue-600 mr-3" />
@@ -119,7 +119,7 @@ const AdminApiKeys = () => {
             className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
               saving
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow-md'
+                : 'bg-[#171717] text-white hover:bg-blue-700 shadow-sm hover:shadow-md'
             }`}
           >
             {saving ? (
@@ -138,7 +138,7 @@ const AdminApiKeys = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6 bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 overflow-auto p-6 bg-gray-50 dark:bg-[#171717]">
         <div className="max-w-4xl mx-auto">
           {/* Status Message */}
           {saveStatus && (
@@ -164,7 +164,7 @@ const AdminApiKeys = () => {
           {/* API Keys Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {keyConfigs.map((config) => (
-              <div key={config.key} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+              <div key={config.key} className="bg-white dark:bg-[#0d0d0d] rounded-lg border border-gray-200 dark:border-[#121212] p-6 shadow-sm">
                 <div className="flex items-center mb-4">
                   <span className="text-2xl mr-3">{config.icon}</span>
                   <div>
@@ -211,24 +211,6 @@ const AdminApiKeys = () => {
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Security Notice */}
-          <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-            <div className="flex items-start">
-              <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                  Security Notice
-                </h4>
-                <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                  <li>• API keys are encrypted and stored securely in the database</li>
-                  <li>• Keys are only accessible to admin users</li>
-                  <li>• Never share your API keys with unauthorized users</li>
-                  <li>• Regularly rotate your API keys for enhanced security</li>
-                </ul>
-              </div>
-            </div>
           </div>
         </div>
       </div>
