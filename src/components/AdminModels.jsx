@@ -39,9 +39,9 @@ const AdminModels = () => {
     setShowModelModal(true);
   };
   const filteredModels = getFilteredModels().filter(model => {
-    const matchesSearch = model.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         model.model_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         model.provider.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (model.display_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (model.model_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (model.provider || '').toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
