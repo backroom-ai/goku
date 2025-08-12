@@ -39,6 +39,7 @@ router.get('/chats', getAllChats);
 router.get('/models', getModelConfigs);
 router.post('/models', createModelConfig);
 router.patch('/models/:modelId', updateModelConfig);
+router.delete('/models/:modelId', deleteModelConfig);
 
 // File upload
 router.post('/upload-pdfs', upload.array('files', 10), uploadPDFs);

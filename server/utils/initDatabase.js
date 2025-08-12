@@ -122,6 +122,38 @@ const createIndexes = async () => {
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_prompt_templates_created_by ON prompt_templates(created_by);
     CREATE INDEX IF NOT EXISTS idx_api_keys_name ON api_keys(key_name);
+
+    -- Knowledge bases table
+    CREATE TABLE IF NOT EXISTS knowledge_bases (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      model_id uuid NOT NULL REFERENCES model_configs(id) ON DELETE CASCADE,
+      region_code text NOT NULL CHECK (region_code IN ('NZ', 'AU', 'UK', 'US')),
+      region_name text NOT NULL,
+      webhook_url text NOT NULL,
+      is_active boolean DEFAULT true,
+      created_at timestamptz DEFAULT now(),
+      updated_at timestamptz DEFAULT now(),
+      UNIQUE(model_id, region_code)
+    );
+
+    -- Knowledge base uploads table
+    CREATE TABLE IF NOT EXISTS knowledge_base_uploads (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      knowledge_base_id uuid NOT NULL REFERENCES knowledge_bases(id) ON DELETE CASCADE,
+      user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      filename text NOT NULL,
+      original_name text NOT NULL,
+      file_type text NOT NULL,
+      file_size integer NOT NULL,
+      file_path text NOT NULL,
+      created_at timestamptz DEFAULT now()
+    );
+
+    -- Additional indexes
+    CREATE INDEX IF NOT EXISTS idx_knowledge_bases_model_id ON knowledge_bases(model_id);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_bases_region ON knowledge_bases(region_code);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_base_uploads_kb_id ON knowledge_base_uploads(knowledge_base_id);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_base_uploads_user_id ON knowledge_base_uploads(user_id);
   `;
 
   await pool.query(createIndexesSQL);
@@ -155,16 +187,36 @@ const insertDefaultData = async () => {
     if (parseInt(modelConfigsCheck.rows[0].count) === 0) {
       await pool.query(`
         INSERT INTO model_configs (model_name, display_name, provider, enabled, default_temperature, max_tokens, system_prompt) VALUES
-        ('gpt-4.1-mini', 'GPT-4', 'openai', true, 0.7, 4096, 'You are a helpful AI assistant.'),
+        ('gpt-4o-mini', 'GPT-4o Mini', 'openai', true, 0.7, 4096, 'You are a helpful AI assistant.'),
         ('claude-3-opus', 'Claude 3 Opus', 'claude', false, 0.7, 4096, 'You are a helpful AI assistant.'),
         ('claude-3-sonnet', 'Claude 3 Sonnet', 'claude', false, 0.7, 4096, 'You are a helpful AI assistant.'),
         ('claude-3-haiku', 'Claude 3 Haiku', 'claude', false, 0.7, 4096, 'You are a helpful AI assistant.'),
         ('groq-llama2-70b', 'Llama 2 70B (Groq)', 'groq', false, 0.7, 4096, 'You are a helpful AI assistant.'),
         ('groq-mixtral-8x7b', 'Mixtral 8x7B (Groq)', 'groq', false, 0.7, 4096, 'You are a helpful AI assistant.'),
         ('ollama-llama3.1:latest', 'Llama 2 (Local)', 'ollama', false, 0.7, 2048, 'You are a helpful AI assistant.'),
-        ('n8n-webhook', 'Goku Saiyan 1', 'n8n', false, 0.7, 2048, 'You are a helpful AI assistant.')
+        ('goku-saiyan-1', 'Goku Saiyan 1', 'n8n', true, 0.7, 4096, 'You are Goku, a powerful and friendly AI assistant. You have access to regional knowledge bases and can help users with information specific to their region.', 'https://workflow.backroomop.com/webhook/goku-main')
       `);
       console.log('✅ Default model configurations created');
+
+      // Create regional knowledge bases for Goku model
+      const gokuModelResult = await pool.query(
+        'SELECT id FROM model_configs WHERE model_name = $1',
+        ['goku-saiyan-1']
+      );
+
+      if (gokuModelResult.rows.length > 0) {
+        const gokuModelId = gokuModelResult.rows[0].id;
+        
+        await pool.query(`
+          INSERT INTO knowledge_bases (model_id, region_code, region_name, webhook_url) VALUES
+          ($1, 'NZ', 'New Zealand', 'https://workflow.backroomop.com/webhook/goku-nz'),
+          ($1, 'AU', 'Australia', 'https://workflow.backroomop.com/webhook/goku-au'),
+          ($1, 'UK', 'United Kingdom', 'https://workflow.backroomop.com/webhook/goku-uk'),
+          ($1, 'US', 'United States', 'https://workflow.backroomop.com/webhook/goku-us')
+        `, [gokuModelId]);
+        
+        console.log('✅ Goku regional knowledge bases created');
+      }
     }
     // ('openai-gpt-3.5-turbo', 'GPT-3.5 Turbo', 'openai', true, 0.7, 4096, 'You are a helpful AI assistant.'),
     // Insert sample prompt templates

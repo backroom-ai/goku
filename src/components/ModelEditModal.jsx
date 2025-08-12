@@ -19,6 +19,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState('');
 
   useEffect(() => {
     if (editingModel) {
@@ -100,6 +101,12 @@ const ModelEditModal = ({ isOpen, onClose }) => {
       return;
     }
 
+    // For Goku model, require region selection
+    if (editingModel.model_name === 'goku-saiyan-1' && !selectedRegion) {
+      alert('Please select a region for Goku knowledge base uploads');
+      return;
+    }
+
     setUploading(true);
     try {
       // Filter only PDF files
@@ -112,7 +119,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
       
       console.log(`Uploading ${pdfFiles.length} PDF files`);
       
-      const result = await uploadPDFs(editingModel.id, pdfFiles);
+      const result = await uploadPDFs(editingModel.id, pdfFiles, selectedRegion);
       
       // Add uploaded files to the list
       if (result.files) {
@@ -303,9 +310,32 @@ const ModelEditModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* PDF Upload for n8n */}
-          {formData.provider === 'n8n' && editingModel && (
+          {(formData.provider === 'n8n' || formData.model_name === 'goku-saiyan-1') && editingModel && (
             <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Knowledge Base</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                {formData.model_name === 'goku-saiyan-1' ? 'Regional Knowledge Bases' : 'Knowledge Base'}
+              </h3>
+              
+              {/* Region Selection for Goku */}
+              {formData.model_name === 'goku-saiyan-1' && editingModel.knowledge_bases && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Region for Upload
+                  </label>
+                  <select
+                    value={selectedRegion}
+                    onChange={(e) => setSelectedRegion(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Choose a region...</option>
+                    {editingModel.knowledge_bases.map((kb) => (
+                      <option key={kb.region_code} value={kb.region_code}>
+                        {kb.region_name} ({kb.region_code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               
               {/* File Selection */}
               <div className="mb-4">

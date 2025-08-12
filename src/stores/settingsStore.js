@@ -140,9 +140,14 @@ const useSettingsStore = create((set, get) => ({
   },
 
   uploadPDFs: async (modelId, files) => {
+  uploadPDFs: async (modelId, files, regionCode = null) => {
     try {
       const formData = new FormData();
       formData.append('modelId', modelId);
+      
+      if (regionCode) {
+        formData.append('regionCode', regionCode);
+      }
       
       // Append multiple files
       for (let i = 0; i < files.length; i++) {

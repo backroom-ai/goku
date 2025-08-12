@@ -151,10 +151,28 @@ export const getAllChats = async (req, res) => {
 
 export const getModelConfigs = async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT * FROM model_configs 
-       ORDER BY provider, display_name`
-    );
+    const result = await pool.query(`
+      SELECT mc.*, 
+             COALESCE(
+               json_agg(
+                 json_build_object(
+                   'id', kb.id,
+                   'region_code', kb.region_code,
+                   'region_name', kb.region_name,
+                   'webhook_url', kb.webhook_url,
+                   'is_active', kb.is_active
+                 ) ORDER BY kb.region_code
+               ) FILTER (WHERE kb.id IS NOT NULL), 
+               '[]'::json
+             ) as knowledge_bases
+      FROM model_configs mc
+      LEFT JOIN knowledge_bases kb ON mc.id = kb.model_id
+      GROUP BY mc.id
+      ORDER BY 
+        CASE WHEN mc.model_name = 'goku-saiyan-1' THEN 0 ELSE 1 END,
+        mc.provider, 
+        mc.display_name
+    `);
 
     res.json(result.rows);
   } catch (error) {
@@ -174,6 +192,21 @@ export const updateModelConfig = async (req, res) => {
       api_endpoint 
     } = req.body;
 
+    // Prevent deletion of Goku model
+    const modelCheck = await pool.query(
+      'SELECT model_name FROM model_configs WHERE id = $1',
+      [modelId]
+    );
+
+    if (modelCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Model config not found' });
+    }
+
+    const modelName = modelCheck.rows[0].model_name;
+    if (modelName === 'goku-saiyan-1' && enabled === false) {
+      return res.status(400).json({ error: 'Goku model cannot be disabled' });
+    }
+
     const result = await pool.query(
       `UPDATE model_configs 
        SET enabled = $1, 
@@ -187,13 +220,40 @@ export const updateModelConfig = async (req, res) => {
       [enabled, default_temperature, max_tokens, system_prompt, api_endpoint, modelId]
     );
 
-    if (result.rows.length === 0) {
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Update model config error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const deleteModelConfig = async (req, res) => {
+  try {
+    const { modelId } = req.params;
+
+    // Prevent deletion of Goku model
+    const modelCheck = await pool.query(
+      'SELECT model_name FROM model_configs WHERE id = $1',
+      [modelId]
+    );
+
+    if (modelCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Model config not found' });
     }
 
-    res.json(result.rows[0]);
+    const modelName = modelCheck.rows[0].model_name;
+    if (modelName === 'goku-saiyan-1') {
+      return res.status(400).json({ error: 'Goku model cannot be deleted' });
+    }
+
+    const result = await pool.query(
+      'DELETE FROM model_configs WHERE id = $1 RETURNING id',
+      [modelId]
+    );
+
+    res.json({ message: 'Model deleted successfully' });
   } catch (error) {
-    console.error('Update model config error:', error);
+    console.error('Delete model config error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -243,15 +303,24 @@ export const createModelConfig = async (req, res) => {
 
 export const uploadPDFs = async (req, res) => {
   try {
-    const modelId = req.body.modelId;
+    const { modelId, regionCode } = req.body;
     const files = req.files;
 
-    if (!files || files.length === 0) {
-      return res.status(400).json({ error: 'Files and model ID are required' });
+    if (!files || files.length === 0 || !modelId) {
+      return res.status(400).json({ error: 'Files, model ID, and region code are required' });
     }
 
-    if (!modelId) {
-      return res.status(400).json({ error: 'Model ID is required' });
+    // Get knowledge base for the region
+    let knowledgeBaseId = null;
+    if (regionCode) {
+      const kbResult = await pool.query(
+        'SELECT id FROM knowledge_bases WHERE model_id = $1 AND region_code = $2',
+        [modelId, regionCode]
+      );
+      
+      if (kbResult.rows.length > 0) {
+        knowledgeBaseId = kbResult.rows[0].id;
+      }
     }
 
     await ensureUploadsDir();
@@ -273,12 +342,24 @@ export const uploadPDFs = async (req, res) => {
       
       await fs.writeFile(filePath, file.buffer);
       
-      const result = await pool.query(
-        `INSERT INTO uploads (user_id, model_id, filename, original_name, file_type, file_size, file_path) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7) 
-         RETURNING *`,
-        [req.user.id, modelId, filename, file.originalname, file.mimetype, file.size, relativePath]
-      );
+      let result;
+      if (knowledgeBaseId) {
+        // Store in knowledge_base_uploads for regional uploads
+        result = await pool.query(
+          `INSERT INTO knowledge_base_uploads (knowledge_base_id, user_id, filename, original_name, file_type, file_size, file_path) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7) 
+           RETURNING *`,
+          [knowledgeBaseId, req.user.id, filename, file.originalname, file.mimetype, file.size, relativePath]
+        );
+      } else {
+        // Store in uploads for general model uploads
+        result = await pool.query(
+          `INSERT INTO uploads (user_id, model_id, filename, original_name, file_type, file_size, file_path) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7) 
+           RETURNING *`,
+          [req.user.id, modelId, filename, file.originalname, file.mimetype, file.size, relativePath]
+        );
+      }
       
       uploadedFiles.push({
         id: result.rows[0].id,

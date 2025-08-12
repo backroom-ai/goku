@@ -134,12 +134,34 @@ const AdminModels = () => {
                     
                     {/* Model Info */}
                     <div>
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {model.display_name}
-                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {model.display_name}
+                        </h3>
+                        {model.model_name === 'goku-saiyan-1' && (
+                          <span className="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">
+                            DEFAULT
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-500">
+                        {model.display_name}
                         {model.model_name} • {model.provider}
                       </p>
+                      
+                      {/* Show knowledge bases for Goku */}
+                      {model.model_name === 'goku-saiyan-1' && model.knowledge_bases && model.knowledge_bases.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-400 mb-1">Regional Knowledge Bases:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {model.knowledge_bases.map((kb) => (
+                              <span key={kb.region_code} className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
+                                {kb.region_code}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -157,8 +179,15 @@ const AdminModels = () => {
                       <input
                         type="checkbox"
                         checked={model.enabled}
-                        onChange={(e) => handleToggleEnabled(model.id, e.target.checked)}
+                        onChange={(e) => {
+                          if (model.model_name === 'goku-saiyan-1' && !e.target.checked) {
+                            alert('Goku model cannot be disabled');
+                            return;
+                          }
+                          handleToggleEnabled(model.id, e.target.checked);
+                        }}
                         className="sr-only"
+                        disabled={model.model_name === 'goku-saiyan-1' && model.enabled}
                       />
                       <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
                         model.enabled ? 'bg-blue-600' : 'bg-gray-300'
