@@ -773,6 +773,7 @@ export const sendMessage = async (modelName, messages, options = {}, chatId) => 
       maxTokens: options.maxTokens || modelConfig.max_tokens,
       systemPrompt: options.systemPrompt || modelConfig.system_prompt,
       attachments: options.attachments || [],
+      signal: options.signal, // Pass through abort signal
       ...options
     };
 

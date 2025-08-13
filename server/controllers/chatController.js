@@ -118,6 +118,13 @@ export const sendChatMessage = async (req, res) => {
     const { content, modelName, fileCount } = req.body;
     const files = req.files || [];
 
+    // Create AbortController to handle request cancellation
+    const controller = new AbortController();
+    
+    // Handle client disconnect
+    req.on('close', () => {
+      controller.abort();
+    });
     if ((!content || !content.trim()) && files.length === 0) {
       return res.status(400).json({ error: 'Content or files are required' });
     }
@@ -202,7 +209,10 @@ export const sendChatMessage = async (req, res) => {
 
     try {
       // Send to AI
-      const response = await sendMessage(modelName, messages, { attachments }, chatId);
+      const response = await sendMessage(modelName, messages, { 
+        attachments,
+        signal: controller.signal 
+      }, chatId);
       
       // Check if request was aborted before saving
       if (!controller.signal.aborted) {
