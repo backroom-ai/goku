@@ -105,7 +105,7 @@ const AdminApiKeys = () => {
       <div className="p-6 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Key className="w-6 h-6 text-blue-600 mr-3" />
+            <Key className="w-6 h-6 text-[#171717] dark:text-white mr-3" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">API Keys</h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
@@ -119,7 +119,7 @@ const AdminApiKeys = () => {
             className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
               saving
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-[#171717] text-white hover:bg-blue-700 shadow-sm hover:shadow-md'
+                : 'bg-transparent text-[#171717] dark:text-white hover:bg-[#171717] hover:dark:bg-white hover:text-white hover:dark:text-[#171717]'
             }`}
           >
             {saving ? (

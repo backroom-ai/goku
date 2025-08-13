@@ -68,10 +68,10 @@ const AdminModels = () => {
     <>
       <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
+      <div className="p-6 bg-white dark:bg-[#171717]">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Bot className="w-6 h-6 text-blue-600 mr-3" />
+            <Bot className="w-6 h-6 text-[#171717] dark:text-white mr-3" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Models</h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">Configure AI models and their availability</p>
@@ -87,7 +87,7 @@ const AdminModels = () => {
       </div>
 
       {/* Filters */}
-      <div className="p-6 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
+      <div className="p-6 bg-white dark:bg-[#171717]">
         <div className="flex flex-col sm:flex-row gap-4 items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -96,7 +96,7 @@ const AdminModels = () => {
               placeholder="Search models..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500 dark:placeholder-gray-400"
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-transparent text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-transparent focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400"
             />
           </div>
           

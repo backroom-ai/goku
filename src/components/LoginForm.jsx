@@ -38,16 +38,16 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4 transition-colors duration-200">
+    <div className="min-h-screen bg-white dark:bg-[#171717] flex items-center justify-center px-4 transition-colors duration-200">
       <div className="max-w-md w-full">
         {/* Logo and title */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="w-16 h-16 flex items-center justify-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 193.7 183.76"
-                className="w-8 h-8 fill-current text-black dark:text-white"
+                className="w-12 h-12 fill-current text-black dark:text-white"
               >
                 <path
                   fill="currentColor"
@@ -100,14 +100,17 @@ const LoginForm = () => {
               </svg>
             </div>
           </div>
+          <h2 className="text-black dark:text-white text-xl font-semibold mb-2">
+            Welcome to Buzz
+          </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Sign in to your account
+            Sign in to your AI assistant
           </p>
         </div>
 
 
         {/* Form */}
-        <div className="bg-white dark:bg-[#0d0d0d] rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-[#121212] transition-colors duration-200">
+        <div className="bg-transparent p-8 transition-colors duration-200">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
@@ -120,13 +123,13 @@ const LoginForm = () => {
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-500" />
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors placeholder-gray-500 dark:placeholder-gray-400"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-100 dark:bg-white text-gray-900 dark:text-[#171717] rounded-lg transition-colors placeholder-gray-500 dark:placeholder-gray-500"
                   placeholder="john@example.com"
                   required
                 />
@@ -138,20 +141,20 @@ const LoginForm = () => {
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-500" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors placeholder-gray-500 dark:placeholder-gray-400"
+                  className="w-full pl-10 pr-12 py-3 bg-gray-100 dark:bg-white text-gray-900 dark:text-[#171717] rounded-lg transition-colors placeholder-gray-500 dark:placeholder-gray-500"
                   placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -161,7 +164,7 @@ const LoginForm = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+              className="w-full py-2.5 px-4 bg-green-400 hover:bg-green-500 text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
               {loading ? (
                 <div className="flex items-center justify-center">
@@ -169,17 +172,10 @@ const LoginForm = () => {
                   {isLogin ? 'Signing in...' : 'Creating account...'}
                 </div>
               ) : (
-                'Sign In'
+                'Sign in'
               )}
             </button>
           </form>
-
-          {/* Demo credentials */}
-          <div className="mt-6 p-4 bg-blue-50 dark:bg-[#171717] rounded-lg border border-blue-200 dark:border-blue-800">
-            <p className="text-sm text-blue-900 dark:text-blue-100 mb-2 font-medium">Demo credentials:</p>
-            <p className="text-xs text-blue-700 dark:text-blue-300">Email: admin@example.com</p>
-            <p className="text-xs text-blue-700 dark:text-blue-300">Password: admin123</p>
-          </div>
         </div>
       </div>
     </div>
