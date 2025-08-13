@@ -86,7 +86,7 @@ class APIClient {
     return this.request(`/chat/${chatId}`);
   }
 
-  async sendMessage(chatId, content, modelName, files = [], signal = null) {
+  async sendMessage(chatId, content, modelName, files = []) {
     const formData = new FormData();
     formData.append('content', content);
     formData.append('modelName', modelName);
