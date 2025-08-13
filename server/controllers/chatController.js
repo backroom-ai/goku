@@ -203,10 +203,9 @@ export const sendChatMessage = async (req, res) => {
     try {
       // Send to AI
       const response = await sendMessage(modelName, messages, { attachments }, chatId);
-      console.log('AI response:', modelName, chatId);
       
-      // Only save AI response if request wasn't aborted
-      if (!req.aborted) {
+      // Check if request was aborted before saving
+      if (!controller.signal.aborted) {
         // Store AI response
         const aiMessageResult = await pool.query(
           `INSERT INTO messages (chat_id, role, content, model_used, tokens_used) 
@@ -239,14 +238,16 @@ export const sendChatMessage = async (req, res) => {
           }
         });
       } else {
-        // Request was aborted, don't save AI response
-        console.log('Request aborted, not saving AI response');
+        // Request was aborted - clean up user message too
+        await pool.query('DELETE FROM messages WHERE id = $1', [userMessageResult.rows[0].id]);
+        console.log('Request aborted, cleaned up messages');
         return;
       }
     } catch (aiError) {
-      // If request was aborted, just return without saving
-      if (req.aborted) {
-        console.log('Request aborted during AI processing');
+      // If request was aborted, clean up and return
+      if (controller.signal.aborted || aiError.name === 'AbortError') {
+        await pool.query('DELETE FROM messages WHERE id = $1', [userMessageResult.rows[0].id]);
+        console.log('Request aborted during AI processing, cleaned up messages');
         return;
       }
       
