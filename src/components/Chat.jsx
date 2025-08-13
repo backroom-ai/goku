@@ -25,7 +25,6 @@ const Chat = () => {
   const [abortController, setAbortController] = useState(null);
   const [typingText, setTypingText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [partialMessageId, setPartialMessageId] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -185,12 +184,10 @@ const Chat = () => {
       abortController.abort();
       setAbortController(null);
     }
-    
     setIsGenerating(false);
     setIsTyping(false);
     setTypingText('');
     setLoading(false);
-    setPartialMessageId(null);
   };
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -231,10 +228,6 @@ const Chat = () => {
       }))
     };
 
-    // Create partial AI message for typing animation
-    const partialAiMessageId = Date.now() + 1;
-    setPartialMessageId(partialAiMessageId);
-
     // Add user message immediately for better UX
     setCurrentChat(prev => ({
       ...prev,
@@ -259,9 +252,6 @@ const Chat = () => {
         // Add typing animation for AI response
         const aiMessage = response.aiMessage;
         const typingInterval = typeMessage(aiMessage.content, () => {
-          // Clear partial message tracking
-          setPartialMessageId(null);
-          
           // Update current chat with server response after typing animation
           setCurrentChat(prev => ({
             ...prev,
@@ -284,12 +274,6 @@ const Chat = () => {
 
         // Store interval for cleanup if needed
         setAbortController(prev => ({ ...prev, typingInterval }));
-      } else {
-        // Generation was aborted - clean up UI state
-        setCurrentChat(prev => ({
-          ...prev,
-          messages: prev.messages.slice(0, -1) // Remove optimistic user message
-        }));
       }
 
     } catch (error) {
@@ -304,13 +288,6 @@ const Chat = () => {
         
         // Show error message
         alert('Failed to send message. Please try again.');
-      }
-      // Clean up UI state on abort
-      if (controller.signal.aborted) {
-        setCurrentChat(prev => ({
-          ...prev,
-          messages: prev.messages.slice(0, -1) // Remove optimistic user message
-        }));
       }
     } finally {
       if (!controller.signal.aborted) {
@@ -880,6 +857,21 @@ const Chat = () => {
               )}
             </div>
 
+            {/* Stop Generating Button */}
+            {isGenerating && (
+              <div className="px-6 py-2 border-t border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
+                <div className="max-w-3xl mx-auto flex justify-center">
+                  <button
+                    onClick={stopGenerating}
+                    className="flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                  >
+                    <Square className="w-4 h-4 mr-2" />
+                    Stop Generating
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Message Input */}
             <div 
               className={`px-6 py-4 border-t border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717] ${
@@ -949,15 +941,10 @@ const Chat = () => {
                   />
                   <button
                     type="submit"
-                    onClick={isGenerating ? stopGenerating : undefined}
-                    disabled={!isGenerating && (!message.trim() && attachedFiles.length === 0)}
-                    className={`px-3 py-3 rounded-xl transition-colors flex items-center justify-center ${
-                      isGenerating 
-                        ? 'bg-red-500 hover:bg-red-600 text-white' 
-                        : 'bg-transparent text-gray-500 dark:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'
-                    }`}
+                    disabled={loading || isGenerating || (!message.trim() && attachedFiles.length === 0)}
+                    className="px-3 py-3 bg-transparent text-gray-500 dark:text-gray-400 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                   >
-                    {isGenerating ? <Square className="w-5 h-5" /> : <Send className="w-5 h-5" />}
+                    <Send className="w-5 h-5" />
                   </button>
                 </form>
               </div>

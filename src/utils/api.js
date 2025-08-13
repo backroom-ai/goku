@@ -30,12 +30,6 @@ class APIClient {
 
     try {
       const response = await fetch(url, config);
-      
-      // Handle aborted requests
-      if (config.signal && config.signal.aborted) {
-        throw new Error('Request was aborted');
-      }
-      
       const data = await response.json();
 
       if (!response.ok) {
@@ -44,10 +38,7 @@ class APIClient {
 
       return data;
     } catch (error) {
-      // Don't log errors for aborted requests
-      if (error.name !== 'AbortError' && !error.message.includes('aborted')) {
       console.error('API request error:', error);
-      }
       throw error;
     }
   }
@@ -106,7 +97,6 @@ class APIClient {
     return this.request(`/chat/${chatId}/message`, {
       method: 'POST',
       body: formData,
-      signal: signal,
       headers: {
         // Don't set Content-Type for FormData, let browser set it with boundary
       }
