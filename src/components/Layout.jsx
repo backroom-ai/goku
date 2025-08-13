@@ -1,14 +1,13 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Home, MessageSquare, Settings, LogOut, Sun, Moon } from 'lucide-react';
+import { MessageSquare, Settings, LogOut, Sun, Moon } from 'lucide-react';
 
 const Layout = ({ children, currentPage, onPageChange }) => {
   const { user, logout, isAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   const navigation = [
-    { id: 'home', name: 'Home', icon: Home },
     { id: 'chat', name: 'Chat', icon: MessageSquare },
   ];
 

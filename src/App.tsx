@@ -3,14 +3,13 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginForm from './components/LoginForm';
 import Layout from './components/Layout';
-import Home from './components/Home';
 import Chat from './components/Chat';
 import Settings from './components/Settings';
 import api from './utils/api';
 
 const AppContent = () => {
   const { isAuthenticated, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState('chat');
 
   if (loading) {
     return (
@@ -24,48 +23,14 @@ const AppContent = () => {
     return <LoginForm />;
   }
 
-  const handleNavigateToChat = (chatId = null, initialMessage = '') => {
-    setCurrentPage('chat');
-    // Store chat navigation data for the Chat component
-    if (chatId) {
-      sessionStorage.setItem('navigateToChatId', chatId);
-    }
-    if (initialMessage) {
-      sessionStorage.setItem('initialMessage', initialMessage);
-    }
-  };
-
-  const handleCreateNewChat = async (initialMessage = '') => {
-    try {
-      const newChat = await api.createChat();
-      
-      return newChat;
-    } catch (error) {
-      console.error('Failed to create chat:', error);
-      throw error;
-    }
-  };
-
   const renderPage = () => {
     switch (currentPage) {
-      case 'home':
-        return (
-          <Home 
-            onNavigateToChat={handleNavigateToChat}
-            onCreateNewChat={handleCreateNewChat}
-          />
-        );
       case 'chat':
         return <Chat />;
       case 'settings':
         return <Settings />;
       default:
-        return (
-          <Home 
-            onNavigateToChat={handleNavigateToChat}
-            onCreateNewChat={handleCreateNewChat}
-          />
-        );
+        return <Chat />;
     }
   };
 

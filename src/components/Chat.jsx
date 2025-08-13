@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Trash2, MessageSquare, Edit3, Check, X, Search, ChevronDown, ChevronRight, Paperclip, FileText, Image, File, Sparkle } from 'lucide-react';
+import { Send, Plus, Trash2, MessageSquare, Edit3, Check, X, Search, ChevronDown, ChevronRight, Paperclip, FileText, Image, File, Sparkles, Square } from 'lucide-react';
 import api from '../utils/api';
 
 const Chat = () => {
@@ -21,34 +21,16 @@ const Chat = () => {
   });
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [abortController, setAbortController] = useState(null);
+  const [typingText, setTypingText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     loadChats();
     loadModels();
-    
-    const handleNavigation = () => {
-      const initialChatId = sessionStorage.getItem('navigateToChatId');
-      const initialMessage = sessionStorage.getItem('initialMessage');
-      
-      if (initialChatId && initialMessage) {
-        sessionStorage.removeItem('navigateToChatId');
-        sessionStorage.removeItem('initialMessage');
-        
-        loadChat(initialChatId).then(() => {
-          setMessage(initialMessage);
-          setTimeout(() => {
-            const form = document.querySelector('form');
-            if (form) {
-              form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-            }
-          }, 100);
-        });
-      }
-    };
-    
-    handleNavigation();
   }, []);
 
   useEffect(() => {
@@ -64,9 +46,7 @@ const Chat = () => {
     try {
       const chatsData = await api.getChats();
       setChats(chatsData);
-      if (chatsData.length > 0 && !currentChat) {
-        loadChat(chatsData[0].id);
-      }
+      // Don't auto-load any chat - start with welcome view
     } catch (error) {
       console.error('Failed to load chats:', error);
     } finally {
@@ -103,8 +83,10 @@ const Chat = () => {
       const newChat = await api.createChat();
       setChats([newChat, ...chats]);
       setCurrentChat({ ...newChat, messages: [] });
+      return newChat;
     } catch (error) {
       console.error('Failed to create chat:', error);
+      throw error;
     }
   };
 
@@ -168,15 +150,71 @@ const Chat = () => {
     );
   };
 
+  // Auto-generate chat title based on first message
+  const generateChatTitle = (message) => {
+    const words = message.trim().split(' ');
+    if (words.length <= 6) {
+      return message.trim();
+    }
+    return words.slice(0, 6).join(' ') + '...';
+  };
+
+  // Typing animation effect
+  const typeMessage = (text, callback) => {
+    setIsTyping(true);
+    setTypingText('');
+    let index = 0;
+    
+    const typeInterval = setInterval(() => {
+      if (index < text.length) {
+        setTypingText(prev => prev + text[index]);
+        index++;
+      } else {
+        clearInterval(typeInterval);
+        setIsTyping(false);
+        callback();
+      }
+    }, 20); // Adjust speed as needed
+    
+    return typeInterval;
+  };
+
+  const stopGenerating = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+    }
+    setIsGenerating(false);
+    setIsTyping(false);
+    setTypingText('');
+    setLoading(false);
+  };
   const sendMessage = async (e) => {
     e.preventDefault();
-    if ((!message.trim() && attachedFiles.length === 0) || !currentChat || !selectedModel || loading) return;
+    if ((!message.trim() && attachedFiles.length === 0) || !selectedModel || loading || isGenerating) return;
+
+    // Create new chat if none exists
+    let chatToUse = currentChat;
+    if (!chatToUse) {
+      try {
+        chatToUse = await createNewChat();
+      } catch (error) {
+        console.error('Failed to create chat:', error);
+        return;
+      }
+    }
 
     const userMessage = message;
     const files = [...attachedFiles];
+    const isFirstMessage = !chatToUse.messages || chatToUse.messages.length === 0;
     setMessage('');
     setAttachedFiles([]);
     setLoading(true);
+    setIsGenerating(true);
+
+    // Create abort controller for stopping generation
+    const controller = new AbortController();
+    setAbortController(controller);
 
     const optimisticUserMessage = {
       id: Date.now(),
@@ -193,42 +231,70 @@ const Chat = () => {
     // Add user message immediately for better UX
     setCurrentChat(prev => ({
       ...prev,
-      messages: [...prev.messages, optimisticUserMessage]
+      messages: [...(prev?.messages || []), optimisticUserMessage]
     }));
 
     try {
-      const response = await api.sendMessage(currentChat.id, userMessage, selectedModel, files);
+      const response = await api.sendMessage(chatToUse.id, userMessage, selectedModel, files, controller.signal);
       
-      // Update current chat with server response
-      setCurrentChat(prev => ({
-        ...prev,
-        messages: [
-          ...prev.messages.slice(0, -1), // Remove optimistic message
-          response.userMessage,
-          response.aiMessage
-        ],
-        title: response.chat?.title || prev.title, // Update title if changed
-        updated_at: response.chat?.updated_at || new Date().toISOString()
-      }));
+      if (!controller.signal.aborted) {
+        // Generate title for first message
+        let updatedTitle = chatToUse.title;
+        if (isFirstMessage && userMessage.trim()) {
+          updatedTitle = generateChatTitle(userMessage);
+          try {
+            await api.updateChatTitle(chatToUse.id, updatedTitle);
+          } catch (titleError) {
+            console.warn('Failed to update chat title:', titleError);
+          }
+        }
 
-      // Update the chat in the sidebar list only if title or timestamp changed
-      if (response.chat) {
-        updateChatInList(response.chat);
+        // Add typing animation for AI response
+        const aiMessage = response.aiMessage;
+        const typingInterval = typeMessage(aiMessage.content, () => {
+          // Update current chat with server response after typing animation
+          setCurrentChat(prev => ({
+            ...prev,
+            title: updatedTitle,
+            messages: [
+              ...prev.messages.slice(0, -1), // Remove optimistic message
+              response.userMessage,
+              aiMessage
+            ],
+            updated_at: response.chat?.updated_at || new Date().toISOString()
+          }));
+
+          // Update the chat in the sidebar list
+          updateChatInList({
+            ...chatToUse,
+            title: updatedTitle,
+            updated_at: response.chat?.updated_at || new Date().toISOString()
+          });
+        });
+
+        // Store interval for cleanup if needed
+        setAbortController(prev => ({ ...prev, typingInterval }));
       }
 
     } catch (error) {
-      console.error('Failed to send message:', error);
-      
-      // Remove optimistic message on error
-      setCurrentChat(prev => ({
-        ...prev,
-        messages: prev.messages.slice(0, -1)
-      }));
-      
-      // Show error message
-      alert('Failed to send message. Please try again.');
+      if (!controller.signal.aborted) {
+        console.error('Failed to send message:', error);
+        
+        // Remove optimistic message on error
+        setCurrentChat(prev => ({
+          ...prev,
+          messages: prev.messages.slice(0, -1)
+        }));
+        
+        // Show error message
+        alert('Failed to send message. Please try again.');
+      }
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+        setIsGenerating(false);
+        setAbortController(null);
+      }
     }
   };
 
@@ -615,20 +681,8 @@ const Chat = () => {
 
   if (chatsLoading) {
     return (
-      <div className="flex h-full bg-white dark:bg-[#171717]">
-        <div className="w-80 bg-gray-50 dark:bg-[#0d0d0d] border-r border-gray-200 dark:border-[#121212] flex flex-col">
-          <div className="p-4 border-b border-gray-200 dark:border-[#121212]">
-            <div className="w-full h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-          </div>
-          <div className="flex-1 p-4 space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-            ))}
-          </div>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d0d0d] dark:border-white"></div>
-        </div>
+      <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#171717]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d0d0d] dark:border-white"></div>
       </div>
     );
   }
@@ -636,7 +690,7 @@ const Chat = () => {
   return (
     <div className="flex h-full bg-white dark:bg-[#171717]">
       {/* Sidebar */}
-      <div className="w-80 bg-gray-50 dark:bg-[#0d0d0d] border-r border-gray-200 dark:border-[#121212] flex flex-col">
+      <div className={`w-80 bg-gray-50 dark:bg-[#0d0d0d] border-r border-gray-200 dark:border-[#121212] flex flex-col ${!currentChat ? 'hidden md:flex' : 'flex'}`}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-[#121212]">
           <div className="flex items-center justify-between mb-4">
@@ -684,10 +738,10 @@ const Chat = () => {
 
       {/* Chat Area */}
       <div className="flex-1 flex flex-col">
-        {currentChat ? (
+        {currentChat || !chatsLoading ? (
           <>
             {/* Chat Header */}
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
+            <div className={`px-6 py-4 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717] ${!currentChat ? 'hidden' : 'block'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <select
@@ -707,7 +761,24 @@ const Chat = () => {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-6 py-6">
-              {messagesLoading ? (
+              {!currentChat ? (
+                // Welcome view when no chat is selected
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center max-w-2xl mx-auto">
+                    <div className="w-16 h-16 bg-gray-100 dark:bg-[#0d0d0d] rounded-2xl flex items-center justify-center mx-auto mb-8">
+                      <Sparkles className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+                    </div>
+                    
+                    <h1 className="text-4xl font-medium text-gray-900 dark:text-white mb-4 tracking-tight">
+                      How can I help you today?
+                    </h1>
+                    
+                    <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 font-normal">
+                      Start a conversation with your AI assistant
+                    </p>
+                  </div>
+                </div>
+              ) : messagesLoading ? (
                 <div className="space-y-6">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="flex items-start space-x-4 animate-pulse">
@@ -763,14 +834,21 @@ const Chat = () => {
                     </div>
                   ))}
                   
-                  {loading && (
+                  {(loading || isTyping) && (
                     <div className="flex items-start space-x-4">
                       <div className="bg-gray-100 dark:bg-[#0d0d0d] px-4 py-3 rounded-2xl">
-                        <div className="flex items-center space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        </div>
+                        {isTyping ? (
+                          <div className="prose max-w-none text-sm">
+                            {formatContent(typingText)}
+                            <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1"></span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -778,6 +856,21 @@ const Chat = () => {
                 </div>
               )}
             </div>
+
+            {/* Stop Generating Button */}
+            {isGenerating && (
+              <div className="px-6 py-2 border-t border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
+                <div className="max-w-3xl mx-auto flex justify-center">
+                  <button
+                    onClick={stopGenerating}
+                    className="flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                  >
+                    <Square className="w-4 h-4 mr-2" />
+                    Stop Generating
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Message Input */}
             <div 
@@ -842,13 +935,13 @@ const Chat = () => {
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder={attachedFiles.length > 0 ? "Add a message (optional)..." : "Ask me anything..."}
+                    placeholder={attachedFiles.length > 0 ? "Add a message (optional)..." : "Message Goku..."}
                     className="flex-1 px-4 py-3 bg-gray-50 dark:bg-[#0d0d0d] text-gray-900 dark:text-white border border-gray-200 dark:border-[#121212] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
-                    disabled={loading}
+                    disabled={loading || isGenerating}
                   />
                   <button
                     type="submit"
-                    disabled={loading || (!message.trim() && attachedFiles.length === 0)}
+                    disabled={loading || isGenerating || (!message.trim() && attachedFiles.length === 0)}
                     className="px-3 py-3 bg-transparent text-gray-500 dark:text-gray-400 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                   >
                     <Send className="w-5 h-5" />
@@ -857,27 +950,7 @@ const Chat = () => {
               </div>
             </div>
           </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center max-w-md mx-auto">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-[#0d0d0d] rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <MessageSquare className="w-8 h-8 text-gray-400" />
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                No chat selected
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Choose a conversation from the sidebar or start a new one.
-              </p>
-              <button
-                onClick={createNewChat}
-                className="px-6 py-3 bg-[#171717] text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
-              >
-                Start New Chat
-              </button>
-            </div>
-          </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
