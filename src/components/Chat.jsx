@@ -227,6 +227,27 @@ const Chat = () => {
     const controller = new AbortController();
     setAbortController(controller);
 
+    const optimisticUserMessage = {
+      id: Date.now(),
+      role: 'user',
+      content: userMessage,
+      created_at: new Date().toISOString(),
+      attachments: files.map(f => ({
+        name: f.name,
+        size: f.size,
+        type: f.type
+      }))
+    };
+
+    // Create partial AI message for typing animation
+    const partialAiMessageId = Date.now() + 1;
+    setPartialMessageId(partialAiMessageId);
+
+    // Add user message immediately for better UX
+    setCurrentChat(prev => ({
+      ...prev,
+      messages: [...(prev?.messages || []), optimisticUserMessage]
+    }));
 
     try {
       const response = await api.sendMessage(chatToUse.id, userMessage, selectedModel, files, controller.signal);
@@ -243,26 +264,6 @@ const Chat = () => {
           }
         }
 
-        // Add user message to UI first
-        const optimisticUserMessage = {
-          ...response.userMessage,
-          attachments: response.userMessage.attachments || files.map(f => ({
-            name: f.name,
-            size: f.size,
-            type: f.type
-          }))
-        };
-
-        // Add user message immediately
-        setCurrentChat(prev => ({
-          ...prev,
-          messages: [...(prev?.messages || []), optimisticUserMessage]
-        }));
-
-        // Create partial AI message for typing animation
-        const partialAiMessageId = Date.now() + 1;
-        setPartialMessageId(partialAiMessageId);
-
         // Add typing animation for AI response
         const aiMessage = response.aiMessage;
         const typingInterval = typeMessage(aiMessage.content, () => {
@@ -274,7 +275,8 @@ const Chat = () => {
             ...prev,
             title: updatedTitle,
             messages: [
-              ...prev.messages.slice(0, -1), // Remove optimistic user message
+              ...prev.messages.slice(0, -1), // Remove optimistic message
+              response.userMessage,
               aiMessage
             ],
             updated_at: response.chat?.updated_at || new Date().toISOString()
@@ -295,22 +297,24 @@ const Chat = () => {
     } catch (error) {
       if (!controller.signal.aborted) {
         console.error('Failed to send message:', error);
+        
+        // Remove optimistic message on error
+        setCurrentChat(prev => ({
+          ...prev,
+          messages: prev.messages.slice(0, -1)
+        }));
+        
         // Show error message
         alert('Failed to send message. Please try again.');
       }
+      // Clear partial message tracking on error
+      setPartialMessageId(null);
     } finally {
       if (!controller.signal.aborted) {
         setLoading(false);
         setIsGenerating(false);
         setAbortController(null);
-      } else {
-        // Generation was stopped - clean up states
-        setLoading(false);
-        setIsGenerating(false);
-        setAbortController(null);
         setPartialMessageId(null);
-        setIsTyping(false);
-        setTypingText('');
       }
     }
   };
