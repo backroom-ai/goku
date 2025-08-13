@@ -106,17 +106,13 @@ class APIClient {
     return this.request(`/chat/${chatId}/message`, {
       method: 'POST',
       body: formData,
+      signal: signal,
       headers: {
         // Don't set Content-Type for FormData, let browser set it with boundary
       }
     });
   }
 
-  async deleteMessage(messageId) {
-    return this.request(`/chat/message/${messageId}`, {
-      method: 'DELETE',
-    });
-  }
   async deleteChat(chatId) {
     return this.request(`/chat/${chatId}`, {
       method: 'DELETE',
