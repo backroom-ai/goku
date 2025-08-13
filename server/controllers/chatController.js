@@ -318,3 +318,35 @@ export const getEnabledModels = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export const deleteMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    // Verify the message belongs to a chat owned by the user
+    const messageResult = await pool.query(
+      `SELECT m.id, c.user_id 
+       FROM messages m
+       JOIN chats c ON m.chat_id = c.id
+       WHERE m.id = $1`,
+      [messageId]
+    );
+
+    if (messageResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    const message = messageResult.rows[0];
+    if (message.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Delete the message
+    await pool.query('DELETE FROM messages WHERE id = $1', [messageId]);
+
+    res.json({ message: 'Message deleted successfully' });
+  } catch (error) {
+    console.error('Delete message error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
