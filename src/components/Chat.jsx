@@ -175,7 +175,7 @@ const Chat = () => {
         setIsTyping(false);
         callback();
       }
-    }, 20); // Adjust speed as needed
+    }, 2.5); // Adjust speed as needed
     
     return typeInterval;
   };
@@ -626,7 +626,7 @@ const Chat = () => {
                 key={chat.id}
                 className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${
                   currentChat?.id === chat.id 
-                    ? 'bg-blue-50 dark:bg-[#171717] text-gray-700 dark:text-gray-300 dark:text-blue-300' 
+                    ? 'bg-gray-50 dark:bg-[#171717] text-gray-700 dark:text-gray-300 dark:text-blue-300' 
                     : 'hover:bg-gray-50 dark:hover:bg-[#141414] text-gray-700 dark:text-gray-300'
                 }`}
                 onClick={() => loadChat(chat.id)}
@@ -713,7 +713,7 @@ const Chat = () => {
   return (
     <div className="flex h-full bg-white dark:bg-[#171717]">
       {/* Sidebar */}
-      <div className={`w-80 bg-gray-50 dark:bg-[#0d0d0d] border-r border-gray-200 dark:border-[#121212] flex flex-col ${!currentChat ? 'hidden md:flex' : 'flex'}`}>
+      <div className={`w-80 bg-white dark:bg-[#0d0d0d] border-r border-gray-200 dark:border-[#121212] flex flex-col ${!currentChat ? 'hidden md:flex' : 'flex'}`}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-[#121212]">
           <div className="flex items-center justify-between mb-4">
@@ -770,7 +770,7 @@ const Chat = () => {
                   <select
                     value={selectedModel}
                     onChange={(e) => setSelectedModel(e.target.value)}
-                    className="px-3 py-2 bg-gray-50 font-semibold dark:bg-[#0d0d0d] text-gray-900 dark:text-white border border-gray-200 dark:border-[#121212] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="px-3 py-2 bg-gray-50 font-semibold dark:bg-[#0d0d0d] text-gray-900 dark:text-white rounded-lg text-sm transition-colors"
                   >
                     {models.map((model) => (
                       <option key={model.model_name} value={model.model_name}>
@@ -863,7 +863,6 @@ const Chat = () => {
                         {isTyping ? (
                           <div className="prose max-w-none text-sm">
                             {formatContent(typingText)}
-                            <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1"></span>
                           </div>
                         ) : (
                           <div className="flex items-center space-x-1">
@@ -943,8 +942,8 @@ const Chat = () => {
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder={attachedFiles.length > 0 ? "Add a message (optional)..." : "Message Goku..."}
-                    className="flex-1 px-4 py-3 bg-gray-50 dark:bg-[#0d0d0d] text-gray-900 dark:text-white border border-gray-200 dark:border-[#121212] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
+                    placeholder={attachedFiles.length > 0 ? "Add a message (optional)..." : "Ask me anything..."}
+                    className="flex-1 px-4 py-3 bg-gray-50 dark:bg-[#0d0d0d] text-gray-900 dark:text-white border border-gray-200 dark:border-[#121212] rounded-xl transition-colors"
                     disabled={loading || isGenerating}
                   />
                   <button
@@ -953,7 +952,7 @@ const Chat = () => {
                     disabled={!isGenerating && (!message.trim() && attachedFiles.length === 0)}
                     className={`px-3 py-3 rounded-xl transition-colors flex items-center justify-center ${
                       isGenerating 
-                        ? 'bg-red-500 hover:bg-red-600 text-white' 
+                        ? 'bg-gray-100 dark:bg-[#121212] hover:bg-gray-200 dark:hover:bg-[#0d0d0d] text-gray-500 dark:text-gray-400' 
                         : 'bg-transparent text-gray-500 dark:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                   >
