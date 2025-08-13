@@ -25,7 +25,7 @@ const Chat = () => {
   const [abortController, setAbortController] = useState(null);
   const [typingText, setTypingText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [partialMessageId, setPartialMessageId] = useState(null);
+  const [currentAiMessageId, setCurrentAiMessageId] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -186,13 +186,31 @@ const Chat = () => {
       setAbortController(null);
     }
     
+    // Delete the AI message in the background if it exists
+    if (currentAiMessageId) {
+      deleteAiMessage(currentAiMessageId);
+      setCurrentAiMessageId(null);
+    }
+    
     setIsGenerating(false);
     setIsTyping(false);
     setTypingText('');
     setLoading(false);
-    setPartialMessageId(null);
   };
   const sendMessage = async (e) => {
+  const deleteAiMessage = async (messageId) => {
+    try {
+      await api.deleteMessage(messageId);
+      // Remove the AI message from the current chat state
+      setCurrentChat(prev => ({
+        ...prev,
+        messages: prev.messages.filter(msg => msg.id !== messageId)
+      }));
+    } catch (error) {
+      console.error('Failed to delete AI message:', error);
+    }
+  };
+
     e.preventDefault();
     if ((!message.trim() && attachedFiles.length === 0) || !selectedModel || loading || isGenerating) return;
 
@@ -219,105 +237,52 @@ const Chat = () => {
     const controller = new AbortController();
     setAbortController(controller);
 
-    const optimisticUserMessage = {
-      id: Date.now(),
-      role: 'user',
-      content: userMessage,
-      created_at: new Date().toISOString(),
-      attachments: files.map(f => ({
-        name: f.name,
-        size: f.size,
-        type: f.type
-      }))
-    };
-
-    // Create partial AI message for typing animation
-    const partialAiMessageId = Date.now() + 1;
-    setPartialMessageId(partialAiMessageId);
-
-    // Add user message immediately for better UX
-    setCurrentChat(prev => ({
-      ...prev,
-      messages: [...(prev?.messages || []), optimisticUserMessage]
-    }));
-
     try {
-      const response = await api.sendMessage(chatToUse.id, userMessage, selectedModel, files, controller.signal);
+      const response = await api.sendMessage(chatToUse.id, userMessage, selectedModel, files);
       
-      if (!controller.signal.aborted) {
-        // Generate title for first message
-        let updatedTitle = chatToUse.title;
-        if (isFirstMessage && userMessage.trim()) {
-          updatedTitle = generateChatTitle(userMessage);
-          try {
-            await api.updateChatTitle(chatToUse.id, updatedTitle);
-          } catch (titleError) {
-            console.warn('Failed to update chat title:', titleError);
-          }
+      // Store the AI message ID for potential deletion
+      setCurrentAiMessageId(response.aiMessage.id);
+      
+      // Generate title for first message
+      let updatedTitle = chatToUse.title;
+      if (isFirstMessage && userMessage.trim()) {
+        updatedTitle = generateChatTitle(userMessage);
+        try {
+          await api.updateChatTitle(chatToUse.id, updatedTitle);
+        } catch (titleError) {
+          console.warn('Failed to update chat title:', titleError);
         }
-
-        // Add typing animation for AI response
-        const aiMessage = response.aiMessage;
-        const typingInterval = typeMessage(aiMessage.content, () => {
-          // Clear partial message tracking
-          setPartialMessageId(null);
-          
-          // Update current chat with server response after typing animation
-          setCurrentChat(prev => ({
-            ...prev,
-            title: updatedTitle,
-            messages: [
-              ...prev.messages.slice(0, -1), // Remove optimistic message
-              response.userMessage,
-              aiMessage
-            ],
-            updated_at: response.chat?.updated_at || new Date().toISOString()
-          }));
-
-          // Update the chat in the sidebar list
-          updateChatInList({
-            ...chatToUse,
-            title: updatedTitle,
-            updated_at: response.chat?.updated_at || new Date().toISOString()
-          });
-        });
-
-        // Store interval for cleanup if needed
-        setAbortController(prev => ({ ...prev, typingInterval }));
-      } else {
-        // Generation was aborted - clean up UI state
-        setCurrentChat(prev => ({
-          ...prev,
-          messages: prev.messages.slice(0, -1) // Remove optimistic user message
-        }));
       }
+
+      // Update current chat with server response
+      setCurrentChat(prev => ({
+        ...prev,
+        title: updatedTitle,
+        messages: [...(prev?.messages || []), response.userMessage, response.aiMessage],
+        updated_at: response.chat?.updated_at || new Date().toISOString()
+      }));
+
+      // Add typing animation for AI response
+      const aiMessage = response.aiMessage;
+      const typingInterval = typeMessage(aiMessage.content, () => {
+        // Clear AI message tracking after typing is complete
+        setCurrentAiMessageId(null);
+      });
+
+      // Update the chat in the sidebar list
+      updateChatInList({
+        ...chatToUse,
+        title: updatedTitle,
+        updated_at: response.chat?.updated_at || new Date().toISOString()
+      });
 
     } catch (error) {
-      if (!controller.signal.aborted) {
-        console.error('Failed to send message:', error);
-        
-        // Remove optimistic message on error
-        setCurrentChat(prev => ({
-          ...prev,
-          messages: prev.messages.slice(0, -1)
-        }));
-        
-        // Show error message
-        alert('Failed to send message. Please try again.');
-      }
-      // Clean up UI state on abort
-      if (controller.signal.aborted) {
-        setCurrentChat(prev => ({
-          ...prev,
-          messages: prev.messages.slice(0, -1) // Remove optimistic user message
-        }));
-      }
+      console.error('Failed to send message:', error);
+      alert('Failed to send message. Please try again.');
     } finally {
-      if (!controller.signal.aborted) {
-        setLoading(false);
-        setIsGenerating(false);
-        setAbortController(null);
-      }
+      setLoading(false);
+      setIsGenerating(false);
+      setAbortController(null);
     }
   };
 
