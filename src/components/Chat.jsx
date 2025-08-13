@@ -186,19 +186,11 @@ const Chat = () => {
       setAbortController(null);
     }
     
-    // Remove partial message from UI if it exists
-    if (partialMessageId && currentChat) {
-      setCurrentChat(prev => ({
-        ...prev,
-        messages: prev.messages.filter(msg => msg.id !== partialMessageId)
-      }));
-      setPartialMessageId(null);
-    }
-    
     setIsGenerating(false);
     setIsTyping(false);
     setTypingText('');
     setLoading(false);
+    setPartialMessageId(null);
   };
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -292,6 +284,12 @@ const Chat = () => {
 
         // Store interval for cleanup if needed
         setAbortController(prev => ({ ...prev, typingInterval }));
+      } else {
+        // Generation was aborted - clean up UI state
+        setCurrentChat(prev => ({
+          ...prev,
+          messages: prev.messages.slice(0, -1) // Remove optimistic user message
+        }));
       }
 
     } catch (error) {
@@ -307,14 +305,18 @@ const Chat = () => {
         // Show error message
         alert('Failed to send message. Please try again.');
       }
-      // Clear partial message tracking on error
-      setPartialMessageId(null);
+      // Clean up UI state on abort
+      if (controller.signal.aborted) {
+        setCurrentChat(prev => ({
+          ...prev,
+          messages: prev.messages.slice(0, -1) // Remove optimistic user message
+        }));
+      }
     } finally {
       if (!controller.signal.aborted) {
         setLoading(false);
         setIsGenerating(false);
         setAbortController(null);
-        setPartialMessageId(null);
       }
     }
   };

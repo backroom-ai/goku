@@ -199,6 +199,7 @@ export const sendChatMessage = async (req, res) => {
     );
 
     const messages = historyResult.rows;
+    let aiMessageId = null;
 
     try {
       // Send to AI
@@ -211,6 +212,8 @@ export const sendChatMessage = async (req, res) => {
          RETURNING id, created_at`,
         [chatId, 'assistant', response.content, modelName, response.tokensUsed]
       );
+      
+      aiMessageId = aiMessageResult.rows[0].id;
       
       // Update chat timestamp
       await pool.query(
@@ -236,6 +239,15 @@ export const sendChatMessage = async (req, res) => {
         }
       });
     } catch (aiError) {
+      // If request was aborted, delete any AI message that was created
+      if (req.aborted && aiMessageId) {
+        try {
+          await pool.query('DELETE FROM messages WHERE id = $1', [aiMessageId]);
+        } catch (deleteError) {
+          console.error('Failed to delete aborted AI message:', deleteError);
+        }
+      }
+      
       console.error('AI API error:', aiError);
       res.status(500).json({ 
         error: 'AI service error',
