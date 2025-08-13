@@ -305,8 +305,8 @@ const Chat = () => {
         // Show error message
         alert('Failed to send message. Please try again.');
       }
-      // Clean up UI state on abort
-      if (controller.signal.aborted) {
+      // Clean up UI state on abort or error
+      if (controller.signal.aborted || error.name === 'AbortError') {
         setCurrentChat(prev => ({
           ...prev,
           messages: prev.messages.slice(0, -1) // Remove optimistic user message

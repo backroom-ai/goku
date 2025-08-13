@@ -199,53 +199,55 @@ export const sendChatMessage = async (req, res) => {
     );
 
     const messages = historyResult.rows;
-    let aiMessageId = null;
 
     try {
       // Send to AI
       const response = await sendMessage(modelName, messages, { attachments }, chatId);
       console.log('AI response:', modelName, chatId);
-      // Store AI response
-      const aiMessageResult = await pool.query(
-        `INSERT INTO messages (chat_id, role, content, model_used, tokens_used) 
-         VALUES ($1, $2, $3, $4, $5) 
-         RETURNING id, created_at`,
-        [chatId, 'assistant', response.content, modelName, response.tokensUsed]
-      );
       
-      aiMessageId = aiMessageResult.rows[0].id;
-      
-      // Update chat timestamp
-      await pool.query(
-        'UPDATE chats SET updated_at = now() WHERE id = $1',
-        [chatId]
-      );
+      // Only save AI response if request wasn't aborted
+      if (!req.aborted) {
+        // Store AI response
+        const aiMessageResult = await pool.query(
+          `INSERT INTO messages (chat_id, role, content, model_used, tokens_used) 
+           VALUES ($1, $2, $3, $4, $5) 
+           RETURNING id, created_at`,
+          [chatId, 'assistant', response.content, modelName, response.tokensUsed]
+        );
+        
+        // Update chat timestamp
+        await pool.query(
+          'UPDATE chats SET updated_at = now() WHERE id = $1',
+          [chatId]
+        );
 
-      res.json({
-        userMessage: {
-          id: userMessageResult.rows[0].id,
-          role: 'user',
-          content: content || '',
-          attachments: attachments,
-          created_at: userMessageResult.rows[0].created_at
-        },
-        aiMessage: {
-          id: aiMessageResult.rows[0].id,
-          role: 'assistant',
-          content: response.content,
-          model_used: modelName,
-          tokens_used: response.tokensUsed,
-          created_at: aiMessageResult.rows[0].created_at
-        }
-      });
+        res.json({
+          userMessage: {
+            id: userMessageResult.rows[0].id,
+            role: 'user',
+            content: content || '',
+            attachments: attachments,
+            created_at: userMessageResult.rows[0].created_at
+          },
+          aiMessage: {
+            id: aiMessageResult.rows[0].id,
+            role: 'assistant',
+            content: response.content,
+            model_used: modelName,
+            tokens_used: response.tokensUsed,
+            created_at: aiMessageResult.rows[0].created_at
+          }
+        });
+      } else {
+        // Request was aborted, don't save AI response
+        console.log('Request aborted, not saving AI response');
+        return;
+      }
     } catch (aiError) {
-      // If request was aborted, delete any AI message that was created
-      if (req.aborted && aiMessageId) {
-        try {
-          await pool.query('DELETE FROM messages WHERE id = $1', [aiMessageId]);
-        } catch (deleteError) {
-          console.error('Failed to delete aborted AI message:', deleteError);
-        }
+      // If request was aborted, just return without saving
+      if (req.aborted) {
+        console.log('Request aborted during AI processing');
+        return;
       }
       
       console.error('AI API error:', aiError);
