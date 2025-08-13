@@ -68,7 +68,7 @@ const AdminUsers = () => {
   if (usersLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d0d0d] dark:border-white"></div>
       </div>
     );
   }
@@ -76,10 +76,10 @@ const AdminUsers = () => {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
+      <div className="p-6 bg-white dark:bg-[#171717]">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Users className="w-6 h-6 text-blue-600 mr-3" />
+            <Users className="w-6 h-6 text-[#171717] dark:text-white mr-3" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">Manage user accounts and permissions</p>
@@ -87,7 +87,7 @@ const AdminUsers = () => {
           </div>
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="flex items-center px-4 py-2 bg-[#171717] text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center px-4 py-2 bg-[#171717] text-white rounded-lg hover:bg-gray-500 dark:hover:bg-gray-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add User
@@ -97,7 +97,7 @@ const AdminUsers = () => {
 
       {/* Create User Form */}
       {showCreateForm && (
-        <div className="p-6 border-b border-gray-200 dark:border-[#121212] bg-gray-50 dark:bg-[#0d0d0d]">
+        <div className="p-6">
           <div className="max-w-2xl">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New User</h2>
             <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -109,7 +109,7 @@ const AdminUsers = () => {
                   type="text"
                   value={newUser.firstName}
                   onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#0d0d0d] text-gray-900 dark:text-white border border-gray-300 dark:border-[#0d0d0d] rounded-lg"
                   required
                 />
               </div>
@@ -121,7 +121,7 @@ const AdminUsers = () => {
                   type="text"
                   value={newUser.lastName}
                   onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#0d0d0d] text-gray-900 dark:text-white border border-gray-300 dark:border-[#0d0d0d] rounded-lg"
                   required
                 />
               </div>
@@ -133,7 +133,7 @@ const AdminUsers = () => {
                   type="email"
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#0d0d0d] text-gray-900 dark:text-white border border-gray-300 dark:border-[#0d0d0d] rounded-lg"
                   required
                 />
               </div>
@@ -145,7 +145,7 @@ const AdminUsers = () => {
                   type="password"
                   value={newUser.password}
                   onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#0d0d0d] text-gray-900 dark:text-white border border-gray-300 dark:border-[#0d0d0d] rounded-lg"
                   required
                   minLength={6}
                 />
@@ -157,7 +157,7 @@ const AdminUsers = () => {
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#0d0d0d] text-gray-900 dark:text-white border border-gray-300 dark:border-[#0d0d0d] rounded-lg"
                 >
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
@@ -195,7 +195,7 @@ const AdminUsers = () => {
       )}
 
       {/* Filters */}
-      <div className="p-6 border-b border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
+      <div className="p-6 bg-white dark:bg-[#171717]">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -204,7 +204,7 @@ const AdminUsers = () => {
               placeholder="Search users..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500 dark:placeholder-gray-400"
+              className="w-full pl-10 pr-4 py-2 bg-transparent text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-transparent focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400"
             />
           </div>
           <div className="flex items-center space-x-2">
@@ -212,7 +212,7 @@ const AdminUsers = () => {
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-2 bg-gray-100 dark:bg-[#121212] text-gray-900 dark:text-white rounded-lg"
             >
               <option value="all">All Roles</option>
               <option value="admin">Admin</option>
@@ -225,7 +225,7 @@ const AdminUsers = () => {
       <div className="flex-1 overflow-auto p-6 bg-gray-50 dark:bg-[#171717]">
         <div className="bg-white dark:bg-[#0d0d0d] rounded-lg border border-gray-200 dark:border-[#121212] overflow-hidden shadow-sm">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+            <thead className="bg-transparent">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   User
@@ -244,12 +244,12 @@ const AdminUsers = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-gray-200 dark:divide-[#171717]">
               {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-[#121212] transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gray-100 dark:bg-[#181818] rounded-full flex items-center justify-center">
                         <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
                           {user.first_name?.[0] || user.email[0].toUpperCase()}
                         </span>
@@ -272,12 +272,12 @@ const AdminUsers = () => {
                       {user.role === 'admin' ? (
                         <Shield className="w-4 h-4 text-red-600 mr-2" />
                       ) : (
-                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-2" />
+                        <User className="w-4 h-4 text-green-600 mr-2" />
                       )}
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         user.role === 'admin' 
                           ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800' 
-                          : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
+                          : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-600'
                       }`}>
                         {user.role}
                       </span>
@@ -290,7 +290,7 @@ const AdminUsers = () => {
                     <select
                       value={user.role}
                       onChange={(e) => handleUpdateUserRole(user.id, e.target.value)}
-                      className="px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="px-3 py-2 bg-gray-100 dark:bg-[#181818] text-gray-900 dark:text-white rounded-lg text-sm"
                     >
                       <option value="user">User</option>
                       <option value="admin">Admin</option>

@@ -162,9 +162,9 @@ const ModelEditModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#0d0d0d] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-[#202020] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-[#121212]">
+        <div className="flex items-center justify-between p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             {editingModel ? 'Edit Model' : 'Add New Model'}
           </h2>
@@ -391,7 +391,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
               {/* Uploaded Files List */}
               {loadingFiles ? (
                 <div className="mt-4 text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d0d0d] dark:border-white mx-auto"></div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Loading uploaded files...</p>
                 </div>
               ) : uploadedFiles.length > 0 ? (
@@ -450,7 +450,7 @@ const ModelEditModal = ({ isOpen, onClose }) => {
           )}
 
           {/* Actions */}
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-[#121212]">
+          <div className="flex justify-end space-x-3 pt-6">
             <button
               type="button"
               onClick={onClose}

@@ -94,7 +94,7 @@ const AdminApiKeys = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d0d0d] dark:border-white"></div>
       </div>
     );
   }
@@ -116,10 +116,10 @@ const AdminApiKeys = () => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+            className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
               saving
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-transparent text-[#171717] dark:text-white hover:bg-[#171717] hover:dark:bg-white hover:text-white hover:dark:text-[#171717]'
+                : 'bg-[#171717] text-white rounded-lg hover:bg-gray-500 dark:hover:bg-gray-700 transition-colors'
             }`}
           >
             {saving ? (
@@ -183,7 +183,7 @@ const AdminApiKeys = () => {
                     value={apiKeys[config.key] || ''}
                     onChange={(e) => handleKeyChange(config.key, e.target.value)}
                     placeholder={config.placeholder}
-                    className="w-full px-4 py-3 pr-12 bg-gray-50 dark:bg-[#141414] text-gray-900 dark:text-white rounded-lg focus:outline-none font-mono text-sm placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full px-4 py-3 pr-12 bg-gray-100 dark:bg-[#141414] text-gray-900 dark:text-white rounded-lg focus:outline-none font-mono text-sm placeholder-gray-500 dark:placeholder-gray-400"
                   />
                   <button
                     type="button"

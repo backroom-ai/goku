@@ -48,7 +48,7 @@ const AdminModels = () => {
   if (modelsLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d0d0d] dark:border-white"></div>
       </div>
     );
   }
@@ -79,7 +79,7 @@ const AdminModels = () => {
           </div>
           <button 
           onClick={handleAddModel}
-          className="flex items-center px-4 py-2 bg-[#171717] text-white rounded-lg hover:bg-blue-700 transition-colors">
+          className="flex items-center px-4 py-2 bg-[#171717] text-white rounded-lg hover:bg-gray-500 dark:hover:bg-gray-700 transition-colors">
             <Plus className="w-4 h-4 mr-2" />
             Add Model
           </button>
@@ -96,20 +96,20 @@ const AdminModels = () => {
               placeholder="Search models..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-transparent text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-transparent focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400"
+              className="w-full pl-10 pr-4 py-2 bg-transparent text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-transparent focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400"
             />
           </div>
           
           {/* Filter Tabs */}
-          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+          <div className="flex bg-gray-100 dark:bg-[#0d0d0d] rounded-lg p-1">
             {['all', 'enabled', 'disabled'].map((filter) => (
               <button
                 key={filter}
                 onClick={() => setModelFilter(filter)}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors capitalize ${
                   modelFilter === filter
-                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                    ? 'bg-white dark:bg-[#202020] text-[#0d0d0d] dark:text-white shadow-sm'
+                    : 'text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 {filter}
@@ -124,7 +124,7 @@ const AdminModels = () => {
         <div className="bg-white dark:bg-[#0d0d0d] rounded-lg shadow-sm">
           <div className="divide-y divide-gray-200 dark:divide-[#121212]">
             {filteredModels.map((model) => (
-              <div key={model.id} className="p-6 hover:bg-gray-50 dark:hover:bg-[#171717] transition-colors">
+              <div key={model.id} className="p-6 hover:bg-gray-50 dark:hover:bg-[#121212] transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     {/* Model Icon */}
