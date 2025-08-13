@@ -117,14 +117,6 @@ export const sendChatMessage = async (req, res) => {
     const { chatId } = req.params;
     const { content, modelName, fileCount } = req.body;
     const files = req.files || [];
-
-    // Create AbortController to handle request cancellation
-    const controller = new AbortController();
-    
-    // Handle client disconnect
-    req.on('close', () => {
-      controller.abort();
-    });
     if ((!content || !content.trim()) && files.length === 0) {
       return res.status(400).json({ error: 'Content or files are required' });
     }
@@ -210,57 +202,41 @@ export const sendChatMessage = async (req, res) => {
     try {
       // Send to AI
       const response = await sendMessage(modelName, messages, { 
-        attachments,
-        signal: controller.signal 
+        attachments
       }, chatId);
       
-      // Check if request was aborted before saving
-      if (!controller.signal.aborted) {
-        // Store AI response
-        const aiMessageResult = await pool.query(
-          `INSERT INTO messages (chat_id, role, content, model_used, tokens_used) 
-           VALUES ($1, $2, $3, $4, $5) 
-           RETURNING id, created_at`,
-          [chatId, 'assistant', response.content, modelName, response.tokensUsed]
-        );
-        
-        // Update chat timestamp
-        await pool.query(
-          'UPDATE chats SET updated_at = now() WHERE id = $1',
-          [chatId]
-        );
-
-        res.json({
-          userMessage: {
-            id: userMessageResult.rows[0].id,
-            role: 'user',
-            content: content || '',
-            attachments: attachments,
-            created_at: userMessageResult.rows[0].created_at
-          },
-          aiMessage: {
-            id: aiMessageResult.rows[0].id,
-            role: 'assistant',
-            content: response.content,
-            model_used: modelName,
-            tokens_used: response.tokensUsed,
-            created_at: aiMessageResult.rows[0].created_at
-          }
-        });
-      } else {
-        // Request was aborted - clean up user message too
-        await pool.query('DELETE FROM messages WHERE id = $1', [userMessageResult.rows[0].id]);
-        console.log('Request aborted, cleaned up messages');
-        return;
-      }
-    } catch (aiError) {
-      // If request was aborted, clean up and return
-      if (controller.signal.aborted || aiError.name === 'AbortError') {
-        await pool.query('DELETE FROM messages WHERE id = $1', [userMessageResult.rows[0].id]);
-        console.log('Request aborted during AI processing, cleaned up messages');
-        return;
-      }
+      // Store AI response
+      const aiMessageResult = await pool.query(
+        `INSERT INTO messages (chat_id, role, content, model_used, tokens_used) 
+         VALUES ($1, $2, $3, $4, $5) 
+         RETURNING id, created_at`,
+        [chatId, 'assistant', response.content, modelName, response.tokensUsed]
+      );
       
+      // Update chat timestamp
+      await pool.query(
+        'UPDATE chats SET updated_at = now() WHERE id = $1',
+        [chatId]
+      );
+
+      res.json({
+        userMessage: {
+          id: userMessageResult.rows[0].id,
+          role: 'user',
+          content: content || '',
+          attachments: attachments,
+          created_at: userMessageResult.rows[0].created_at
+        },
+        aiMessage: {
+          id: aiMessageResult.rows[0].id,
+          role: 'assistant',
+          content: response.content,
+          model_used: modelName,
+          tokens_used: response.tokensUsed,
+          created_at: aiMessageResult.rows[0].created_at
+        }
+      });
+    } catch (aiError) {
       console.error('AI API error:', aiError);
       res.status(500).json({ 
         error: 'AI service error',

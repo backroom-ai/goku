@@ -191,6 +191,12 @@ const Chat = () => {
     setTypingText('');
     setLoading(false);
     setPartialMessageId(null);
+    
+    // Remove the optimistic user message from UI
+    setCurrentChat(prev => ({
+      ...prev,
+      messages: prev.messages.slice(0, -1)
+    }));
   };
   const sendMessage = async (e) => {
     e.preventDefault();
