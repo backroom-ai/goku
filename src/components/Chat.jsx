@@ -867,7 +867,11 @@ const Chat = ({ resetToWelcome }) => {
                           <div className={`mt-2 text-xs ${
                             msg.role === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                           }`}>
-                            {msg.model_used}
+                            {msg.model_used} - {new Date().toLocaleDateString('en-US')} at {new Date().toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true
+                            })}
                           </div>
                         )}
                       </div>
