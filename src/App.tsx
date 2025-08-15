@@ -10,6 +10,7 @@ import api from './utils/api';
 const AppContent = () => {
   const { isAuthenticated, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState('chat');
+  const [resetToWelcome, setResetToWelcome] = useState(false);
 
   if (loading) {
     return (
@@ -23,19 +24,29 @@ const AppContent = () => {
     return <LoginForm />;
   }
 
+  const handlePageChange = (page) => {
+    if (page === 'chat') {
+      // Trigger reset to welcome view when logo is clicked
+      setResetToWelcome(true);
+      // Reset the flag after a brief moment to allow the Chat component to react
+      setTimeout(() => setResetToWelcome(false), 100);
+    }
+    setCurrentPage(page);
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case 'chat':
-        return <Chat />;
+        return <Chat resetToWelcome={resetToWelcome} />;
       case 'settings':
         return <Settings />;
       default:
-        return <Chat />;
+        return <Chat resetToWelcome={resetToWelcome} />;
     }
   };
 
   return (
-    <Layout currentPage={currentPage} onPageChange={setCurrentPage}>
+    <Layout currentPage={currentPage} onPageChange={handlePageChange}>
       {renderPage()}
     </Layout>
   );

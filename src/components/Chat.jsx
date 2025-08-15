@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Plus, Trash2, MessageSquare, Edit3, Check, X, Search, ChevronDown, ChevronRight, Paperclip, FileText, Image, File, Sparkles, Square } from 'lucide-react';
 import api from '../utils/api';
 
-const Chat = () => {
+const Chat = ({ resetToWelcome }) => {
   const [chats, setChats] = useState([]);
   const [currentChat, setCurrentChat] = useState(null);
   const [message, setMessage] = useState('');
@@ -37,6 +37,22 @@ const Chat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [currentChat?.messages]);
+
+  // Handle reset to welcome view when logo is clicked
+  useEffect(() => {
+    if (resetToWelcome) {
+      setCurrentChat(null);
+      setMessage('');
+      setAttachedFiles([]);
+      setIsGenerating(false);
+      setIsTyping(false);
+      setTypingText('');
+      if (abortController) {
+        abortController.abort();
+        setAbortController(null);
+      }
+    }
+  }, [resetToWelcome]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -164,18 +180,18 @@ const Chat = () => {
   const typeMessage = (text, callback) => {
     setIsTyping(true);
     setTypingText('');
-    let index = 0;
+    let index = -1;
     
     const typeInterval = setInterval(() => {
+      index++; // Increment first
       if (index < text.length) {
         setTypingText(prev => prev + text[index]);
-        index++;
       } else {
         clearInterval(typeInterval);
         setIsTyping(false);
         callback();
       }
-    }, 2.5); // Adjust speed as needed
+    }, 2.5);
     
     return typeInterval;
   };
@@ -192,6 +208,7 @@ const Chat = () => {
     setLoading(false);
     setPartialMessageId(null);
   };
+
   const sendMessage = async (e) => {
     e.preventDefault();
     if ((!message.trim() && attachedFiles.length === 0) || !selectedModel || loading || isGenerating) return;
@@ -859,7 +876,7 @@ const Chat = () => {
                   
                   {(loading || isTyping) && (
                     <div className="flex items-start space-x-4">
-                      <div className="bg-gray-100 dark:bg-[#0d0d0d] px-4 py-3 rounded-2xl">
+                      <div className="bg-gray-100 dark:bg-[#0d0d0d] px-4 py-3 rounded-2xl dark:text-white">
                         {isTyping ? (
                           <div className="prose max-w-none text-sm">
                             {formatContent(typingText)}

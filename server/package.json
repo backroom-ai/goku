@@ -1,7 +1,7 @@
 {
-  "name": "openwebui-backend",
+  "name": "buzz-backend",
   "version": "1.0.0",
-  "description": "Backend for Open WebUI Clone",
+  "description": "Backend for Buzz",
   "main": "server.js",
   "type": "module",
   "scripts": {

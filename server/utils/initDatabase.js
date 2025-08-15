@@ -256,7 +256,7 @@ const insertDefaultData = async () => {
     if (parseInt(chatCheck.rows[0].count) === 0) {
       const chatResult = await pool.query(
         `INSERT INTO chats (user_id, title) VALUES ($1, $2) RETURNING id`,
-        [adminUserId, 'Welcome to Open WebUI']
+        [adminUserId, 'Welcome to Buzz']
       );
 
       const chatId = chatResult.rows[0].id;
@@ -266,7 +266,7 @@ const insertDefaultData = async () => {
         [
           chatId,
           'assistant',
-          'Welcome to Open WebUI! I\'m here to help you with any questions or tasks you might have. As an admin, you have access to:\n\n• User management\n• Model configuration\n• Prompt templates\n• System settings\n\nFeel free to ask me anything!',
+          'Welcome to Buzz! I\'m here to help you with any questions or tasks you might have. As an admin, you have access to:\n\n• User management\n• Model configuration\n• Prompt templates\n• System settings\n\nFeel free to ask me anything!',
           'gpt-4.1-mini',
           45
         ]

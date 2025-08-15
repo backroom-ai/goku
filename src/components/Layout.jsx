@@ -16,7 +16,9 @@ const Layout = ({ children, currentPage, onPageChange }) => {
       {/* Minimalist Sidebar */}
       <div className="w-16 bg-gray-50 dark:bg-[#0d0d0d] border-r border-gray-200 dark:border-[#121212] flex flex-col">
         {/* Logo */}
-        <div className="flex items-center justify-center py-6">
+        <button 
+        onClick={() => onPageChange('chat')}
+        className="flex items-center justify-center py-6">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 193.7 183.76"
@@ -71,7 +73,7 @@ const Layout = ({ children, currentPage, onPageChange }) => {
               points="10.5 0 10.5 64.73 18.57 64.73 18.57 8.08 185.63 8.08 185.63 175.1 149.8 175.1 149.8 183.18 193.7 183.18 193.7 0 10.5 0"
             />
           </svg>
-        </div>
+        </button>
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-6 space-y-3">

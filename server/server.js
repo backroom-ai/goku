@@ -65,7 +65,7 @@ app.get('/api/health', async (req, res) => {
 // Default route
 app.get('/api', (req, res) => {
   res.json({ 
-    message: 'Open WebUI Backend API',
+    message: 'Buzz Backend API',
     version: '1.0.0',
     endpoints: {
       auth: '/api/auth',
