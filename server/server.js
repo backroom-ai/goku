@@ -27,9 +27,10 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://buzz.backroomop.com'] 
-    : ['http://localhost:5173', 'http://localhost:3000'],
+  origin: 'https://buzz.backroomop.com',
+  // origin: process.env.NODE_ENV === 'production' 
+  //   ? ['https://buzz.backroomop.com'] 
+  //   : ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
