@@ -26,7 +26,6 @@ const Chat = ({ resetToWelcome }) => {
   const [typingText, setTypingText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [pendingAiMessage, setPendingAiMessage] = useState(null);
-  const [showStopButton, setShowStopButton] = useState(false);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -209,7 +208,6 @@ const Chat = ({ resetToWelcome }) => {
     setIsTyping(false);
     setTypingText('');
     setLoading(false);
-    setShowStopButton(false);
     
     // Remove the pending AI message from UI and mark for deletion
     if (pendingAiMessage) {
@@ -249,7 +247,6 @@ const Chat = ({ resetToWelcome }) => {
     setAttachedFiles([]);
     setLoading(true);
     setIsGenerating(true);
-    setShowStopButton(true);
 
     // Create abort controller for stopping generation
     const controller = new AbortController();
@@ -305,7 +302,6 @@ const Chat = ({ resetToWelcome }) => {
         const typingInterval = typeMessage(aiMessage.content, () => {
           // Animation completed - replace temporary message with real one
           setPendingAiMessage(null);
-          setShowStopButton(false);
           
           // Update current chat with final server response
           setCurrentChat(prev => ({
@@ -361,7 +357,6 @@ const Chat = ({ resetToWelcome }) => {
       if (!controller.signal.aborted) {
         setLoading(false);
         setIsGenerating(false);
-        setShowStopButton(false);
         setAbortController(null);
       }
     }
@@ -896,7 +891,7 @@ const Chat = ({ resetToWelcome }) => {
                           <div className={`mt-2 text-xs ${
                             msg.role === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                           }`}>
-                            {msg.model_used} - {new Date(msg.created_at).toLocaleDateString('en-US')} at {new Date(msg.created_at).toLocaleTimeString('en-US', {
+                            {msg.model_used} - {new Date().toLocaleDateString('en-US')} at {new Date().toLocaleTimeString('en-US', {
                               hour: 'numeric',
                               minute: '2-digit',
                               hour12: true
@@ -1000,14 +995,14 @@ const Chat = ({ resetToWelcome }) => {
                   <button
                     type="submit"
                     onClick={isGenerating ? stopGenerating : undefined}
-                    disabled={!showStopButton && (!message.trim() && attachedFiles.length === 0)}
+                    disabled={!isGenerating && (!message.trim() && attachedFiles.length === 0)}
                     className={`px-3 py-3 rounded-xl transition-colors flex items-center justify-center ${
-                      showStopButton 
+                      isGenerating 
                         ? 'bg-gray-100 dark:bg-[#121212] hover:bg-gray-200 dark:hover:bg-[#0d0d0d] text-gray-500 dark:text-gray-400' 
                         : 'bg-transparent text-gray-500 dark:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                   >
-                    {showStopButton ? <Square className="w-5 h-5" /> : <Send className="w-5 h-5" />}
+                    {isGenerating ? <Square className="w-5 h-5" /> : <Send className="w-5 h-5" />}
                   </button>
                 </form>
               </div>
