@@ -217,6 +217,12 @@ class APIClient {
       body: JSON.stringify(keys),
     });
   }
+
+  async deleteMessage(messageId) {
+    return this.request(`/chat/message/${messageId}`, {
+      method: 'DELETE',
+    });
+  }
   logout() {
     this.setToken(null);
   }

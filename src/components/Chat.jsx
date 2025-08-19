@@ -25,7 +25,7 @@ const Chat = ({ resetToWelcome }) => {
   const [abortController, setAbortController] = useState(null);
   const [typingText, setTypingText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [partialMessageId, setPartialMessageId] = useState(null);
+  const [pendingAiMessage, setPendingAiMessage] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -47,6 +47,7 @@ const Chat = ({ resetToWelcome }) => {
       setIsGenerating(false);
       setIsTyping(false);
       setTypingText('');
+      setPendingAiMessage(null);
       if (abortController) {
         abortController.abort();
         setAbortController(null);
@@ -202,11 +203,26 @@ const Chat = ({ resetToWelcome }) => {
       setAbortController(null);
     }
     
+    // Clear typing animation immediately
     setIsGenerating(false);
     setIsTyping(false);
     setTypingText('');
     setLoading(false);
-    setPartialMessageId(null);
+    
+    // Remove the pending AI message from UI and mark for deletion
+    if (pendingAiMessage) {
+      setCurrentChat(prev => ({
+        ...prev,
+        messages: prev.messages.filter(msg => msg.id !== pendingAiMessage.id)
+      }));
+      
+      // Delete the incomplete message from database
+      api.deleteMessage(pendingAiMessage.id).catch(error => {
+        console.error('Failed to delete incomplete message:', error);
+      });
+      
+      setPendingAiMessage(null);
+    }
   };
 
   const sendMessage = async (e) => {
@@ -249,13 +265,18 @@ const Chat = ({ resetToWelcome }) => {
     };
 
     // Create partial AI message for typing animation
-    const partialAiMessageId = Date.now() + 1;
-    setPartialMessageId(partialAiMessageId);
+    const tempAiMessage = {
+      id: Date.now() + 1,
+      role: 'assistant',
+      content: '',
+      created_at: new Date().toISOString(),
+      isTemporary: true
+    };
 
     // Add user message immediately for better UX
     setCurrentChat(prev => ({
       ...prev,
-      messages: [...(prev?.messages || []), optimisticUserMessage]
+      messages: [...(prev?.messages || []), optimisticUserMessage, tempAiMessage]
     }));
 
     try {
@@ -273,18 +294,21 @@ const Chat = ({ resetToWelcome }) => {
           }
         }
 
-        // Add typing animation for AI response
+        // Store the actual AI message for potential deletion
+        setPendingAiMessage(response.aiMessage);
+        
+        // Start typing animation for AI response
         const aiMessage = response.aiMessage;
         const typingInterval = typeMessage(aiMessage.content, () => {
-          // Clear partial message tracking
-          setPartialMessageId(null);
+          // Animation completed - replace temporary message with real one
+          setPendingAiMessage(null);
           
-          // Update current chat with server response after typing animation
+          // Update current chat with final server response
           setCurrentChat(prev => ({
             ...prev,
             title: updatedTitle,
             messages: [
-              ...prev.messages.slice(0, -1), // Remove optimistic message
+              ...prev.messages.slice(0, -2), // Remove optimistic user message and temp AI message
               response.userMessage,
               aiMessage
             ],
@@ -305,7 +329,7 @@ const Chat = ({ resetToWelcome }) => {
         // Generation was aborted - clean up UI state
         setCurrentChat(prev => ({
           ...prev,
-          messages: prev.messages.slice(0, -1) // Remove optimistic user message
+          messages: prev.messages.slice(0, -2) // Remove optimistic user and temp AI messages
         }));
       }
 
@@ -313,10 +337,10 @@ const Chat = ({ resetToWelcome }) => {
       if (!controller.signal.aborted) {
         console.error('Failed to send message:', error);
         
-        // Remove optimistic message on error
+        // Remove optimistic messages on error
         setCurrentChat(prev => ({
           ...prev,
-          messages: prev.messages.slice(0, -1)
+          messages: prev.messages.slice(0, -2)
         }));
         
         // Show error message
@@ -326,7 +350,7 @@ const Chat = ({ resetToWelcome }) => {
       if (controller.signal.aborted) {
         setCurrentChat(prev => ({
           ...prev,
-          messages: prev.messages.slice(0, -1) // Remove optimistic user message
+          messages: prev.messages.slice(0, -2) // Remove optimistic user and temp AI messages
         }));
       }
     } finally {
@@ -884,6 +908,7 @@ const Chat = ({ resetToWelcome }) => {
                         {isTyping ? (
                           <div className="prose max-w-none text-sm">
                             {formatContent(typingText)}
+                            <span className="animate-pulse">|</span>
                           </div>
                         ) : (
                           <div className="flex items-center space-x-1">

@@ -32,5 +32,6 @@ router.get('/:chatId', getChat);
 router.post('/:chatId/message', upload.any(), sendChatMessage);
 router.patch('/:chatId/title', updateChatTitle);
 router.delete('/:chatId', deleteChat);
+router.delete('/message/:messageId', deleteMessage);
 
 export default router;
