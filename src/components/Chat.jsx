@@ -891,7 +891,7 @@ const Chat = ({ resetToWelcome }) => {
                           <div className={`mt-2 text-xs ${
                             msg.role === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                           }`}>
-                            {msg.model_used} - {new Date().toLocaleDateString('en-US')} at {new Date().toLocaleTimeString('en-US', {
+                            {msg.model_used} - {new Date(msg.created_at).toLocaleDateString('en-US')} at {new Date(msg.created_at).toLocaleTimeString('en-US', {
                               hour: 'numeric',
                               minute: '2-digit',
                               hour12: true
@@ -924,6 +924,21 @@ const Chat = ({ resetToWelcome }) => {
                 </div>
               )}
             </div>
+
+            {/* Stop Generating Button - positioned above input */}
+            {isGenerating && (
+              <div className="px-6 py-2 border-t border-gray-200 dark:border-[#121212] bg-white dark:bg-[#171717]">
+                <div className="max-w-3xl mx-auto flex justify-center">
+                  <button
+                    onClick={stopGenerating}
+                    className="flex items-center px-4 py-2 bg-gray-100 dark:bg-[#121212] hover:bg-gray-200 dark:hover:bg-[#0d0d0d] text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+                  >
+                    <Square className="w-4 h-4 mr-2" />
+                    Stop generating
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Message Input */}
             <div 
@@ -994,15 +1009,10 @@ const Chat = ({ resetToWelcome }) => {
                   />
                   <button
                     type="submit"
-                    onClick={isGenerating ? stopGenerating : undefined}
                     disabled={!isGenerating && (!message.trim() && attachedFiles.length === 0)}
-                    className={`px-3 py-3 rounded-xl transition-colors flex items-center justify-center ${
-                      isGenerating 
-                        ? 'bg-gray-100 dark:bg-[#121212] hover:bg-gray-200 dark:hover:bg-[#0d0d0d] text-gray-500 dark:text-gray-400' 
-                        : 'bg-transparent text-gray-500 dark:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'
-                    }`}
+                    className="px-3 py-3 rounded-xl transition-colors flex items-center justify-center bg-transparent text-gray-500 dark:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isGenerating ? <Square className="w-5 h-5" /> : <Send className="w-5 h-5" />}
+                    <Send className="w-5 h-5" />
                   </button>
                 </form>
               </div>

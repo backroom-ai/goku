@@ -183,10 +183,10 @@ export const sendChatMessage = async (req, res) => {
 
     // Store user message
     const userMessageResult = await pool.query(
-      `INSERT INTO messages (chat_id, role, content, attachments) 
-       VALUES ($1, $2, $3, $4) 
+      `INSERT INTO messages (chat_id, role, content, attachments, model_used) 
+       VALUES ($1, $2, $3, $4, $5) 
        RETURNING id, created_at`,
-      [chatId, 'user', content || '', JSON.stringify(attachments)]
+      [chatId, 'user', content || '', JSON.stringify(attachments), modelName]
     );
 
     // Get chat history for context
