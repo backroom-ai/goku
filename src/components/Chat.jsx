@@ -26,6 +26,7 @@ const Chat = ({ resetToWelcome }) => {
   const [typingText, setTypingText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [pendingAiMessage, setPendingAiMessage] = useState(null);
+  const [isAborted, setIsAborted] = useState(false);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -49,6 +50,9 @@ const Chat = ({ resetToWelcome }) => {
       setTypingText('');
       setPendingAiMessage(null);
       if (abortController) {
+        if (abortController.typingInterval) {
+          clearInterval(abortController.typingInterval);
+        }
         abortController.abort();
         setAbortController(null);
       }
@@ -84,11 +88,33 @@ const Chat = ({ resetToWelcome }) => {
     }
   };
 
+  // Helper function to get the latest model used from chat messages
+  const getLatestModelFromMessages = (messages) => {
+    if (!messages || messages.length === 0) return null;
+    
+    // Find the most recent assistant message with a model_used field
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message.role === 'assistant' && message.model_used) {
+        return message.model_used;
+      }
+    }
+    
+    return null;
+  };
+
   const loadChat = async (chatId) => {
     setMessagesLoading(true);
     try {
       const chatData = await api.getChat(chatId);
       setCurrentChat(chatData);
+      
+      // Update selected model based on the latest model used in this chat
+      const latestModel = getLatestModelFromMessages(chatData.messages);
+      if (latestModel && models.some(model => model.model_name === latestModel)) {
+        setSelectedModel(latestModel);
+      }
+      
     } catch (error) {
       console.error('Failed to load chat:', error);
     } finally {
@@ -101,6 +127,12 @@ const Chat = ({ resetToWelcome }) => {
       const newChat = await api.createChat();
       setChats([newChat, ...chats]);
       setCurrentChat({ ...newChat, messages: [] });
+      
+      // Reset to default model for new chat (first model in the list)
+      if (models.length > 0) {
+        setSelectedModel(models[0].model_name);
+      }
+      
       return newChat;
     } catch (error) {
       console.error('Failed to create chat:', error);
@@ -150,6 +182,10 @@ const Chat = ({ resetToWelcome }) => {
           loadChat(remainingChats[0].id);
         } else {
           setCurrentChat(null);
+          // Reset to default model when no chat is selected
+          if (models.length > 0) {
+            setSelectedModel(models[0].model_name);
+          }
         }
       }
     } catch (error) {
@@ -184,6 +220,13 @@ const Chat = ({ resetToWelcome }) => {
     let index = -1;
     
     const typeInterval = setInterval(() => {
+      // Check if generation was stopped
+      if (abortController?.signal.aborted) {
+        clearInterval(typeInterval);
+        setIsTyping(false);
+        return;
+      }
+      
       index++; // Increment first
       if (index < text.length) {
         setTypingText(prev => prev + text[index]);
@@ -198,9 +241,16 @@ const Chat = ({ resetToWelcome }) => {
   };
 
   const stopGenerating = () => {
+    // Set abort flag first
+    setIsAborted(true);
+    
+    // Clear typing interval if it exists
+    if (abortController?.typingInterval) {
+      clearInterval(abortController.typingInterval);
+    }
+    
     if (abortController) {
       abortController.abort();
-      setAbortController(null);
     }
     
     // Clear typing animation immediately
@@ -211,11 +261,6 @@ const Chat = ({ resetToWelcome }) => {
     
     // Remove the pending AI message from UI and mark for deletion
     if (pendingAiMessage) {
-      setCurrentChat(prev => ({
-        ...prev,
-        messages: prev.messages.filter(msg => msg.id !== pendingAiMessage.id)
-      }));
-      
       // Delete the incomplete message from database
       api.deleteMessage(pendingAiMessage.id).catch(error => {
         console.error('Failed to delete incomplete message:', error);
@@ -223,11 +268,31 @@ const Chat = ({ resetToWelcome }) => {
       
       setPendingAiMessage(null);
     }
+    
+    // Remove the optimistic user message from UI immediately
+    setCurrentChat(prev => {
+      if (!prev?.messages) return prev;
+      // Find and remove the last user message (optimistic)
+      const messages = [...prev.messages];
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].id && typeof messages[i].id === 'number') {
+          // This is likely the optimistic message (has numeric timestamp ID)
+          messages.splice(i, 1);
+          break;
+        }
+      }
+      return { ...prev, messages };
+    });
+    
+    setAbortController(null);
   };
 
   const sendMessage = async (e) => {
     e.preventDefault();
     if ((!message.trim() && attachedFiles.length === 0) || !selectedModel || loading || isGenerating) return;
+
+    // Reset abort flag
+    setIsAborted(false);
 
     // Create new chat if none exists
     let chatToUse = currentChat;
@@ -264,97 +329,107 @@ const Chat = ({ resetToWelcome }) => {
       }))
     };
 
-    // Create partial AI message for typing animation
-    const tempAiMessage = {
-      id: Date.now() + 1,
-      role: 'assistant',
-      content: '',
-      created_at: new Date().toISOString(),
-      isTemporary: true
-    };
-
     // Add user message immediately for better UX
     setCurrentChat(prev => ({
       ...prev,
-      messages: [...(prev?.messages || []), optimisticUserMessage, tempAiMessage]
+      messages: [...(prev?.messages || []), optimisticUserMessage]
     }));
 
     try {
       const response = await api.sendMessage(chatToUse.id, userMessage, selectedModel, files, controller.signal);
       
-      if (!controller.signal.aborted) {
-        // Generate title for first message
-        let updatedTitle = chatToUse.title;
-        if (isFirstMessage && userMessage.trim()) {
-          updatedTitle = generateChatTitle(userMessage);
-          try {
-            await api.updateChatTitle(chatToUse.id, updatedTitle);
-          } catch (titleError) {
-            console.warn('Failed to update chat title:', titleError);
-          }
+      // Check if generation was aborted before processing response
+      if (controller.signal.aborted || isAborted) {
+        // If aborted, delete any messages that were created on the server
+        if (response?.userMessage?.id) {
+          api.deleteMessage(response.userMessage.id).catch(console.error);
         }
-
-        // Store the actual AI message for potential deletion
-        setPendingAiMessage(response.aiMessage);
-        
-        // Start typing animation for AI response
-        const aiMessage = response.aiMessage;
-        const typingInterval = typeMessage(aiMessage.content, () => {
-          // Animation completed - replace temporary message with real one
-          setPendingAiMessage(null);
-          
-          // Update current chat with final server response
-          setCurrentChat(prev => ({
-            ...prev,
-            title: updatedTitle,
-            messages: [
-              ...prev.messages.slice(0, -2), // Remove optimistic user message and temp AI message
-              response.userMessage,
-              aiMessage
-            ],
-            updated_at: response.chat?.updated_at || new Date().toISOString()
-          }));
-
-          // Update the chat in the sidebar list
-          updateChatInList({
-            ...chatToUse,
-            title: updatedTitle,
-            updated_at: response.chat?.updated_at || new Date().toISOString()
-          });
-        });
-
-        // Store interval for cleanup if needed
-        setAbortController(prev => ({ ...prev, typingInterval }));
-      } else {
-        // Generation was aborted - clean up UI state
-        setCurrentChat(prev => ({
-          ...prev,
-          messages: prev.messages.slice(0, -2) // Remove optimistic user and temp AI messages
-        }));
+        if (response?.aiMessage?.id) {
+          api.deleteMessage(response.aiMessage.id).catch(console.error);
+        }
+        return; // Exit early
+      }
+      
+      // Generate title for first message
+      let updatedTitle = chatToUse.title;
+      if (isFirstMessage && userMessage.trim()) {
+        updatedTitle = generateChatTitle(userMessage);
+        try {
+          await api.updateChatTitle(chatToUse.id, updatedTitle);
+        } catch (titleError) {
+          console.warn('Failed to update chat title:', titleError);
+        }
       }
 
+      // Store the actual AI message for potential deletion
+      setPendingAiMessage(response.aiMessage);
+      
+      // Start typing animation for AI response
+      const aiMessage = response.aiMessage;
+      const typingInterval = typeMessage(aiMessage.content, () => {
+        // Check again if aborted during typing animation
+        if (controller.signal.aborted || isAborted) {
+          return;
+        }
+        
+        // Animation completed - add the final message
+        setPendingAiMessage(null);
+        
+        // Replace the optimistic user message with the server response
+        setCurrentChat(prev => {
+          if (!prev?.messages) return prev;
+          
+          // Find and replace the optimistic user message
+          const messages = [...prev.messages];
+          for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].role === 'user' && messages[i].id === optimisticUserMessage.id) {
+              // Replace optimistic message with server response and add AI message
+              messages[i] = response.userMessage;
+              messages.push(aiMessage);
+              break;
+            }
+          }
+          
+          return {
+            ...prev,
+            title: updatedTitle,
+            messages,
+            updated_at: response.chat?.updated_at || new Date().toISOString()
+          };
+        });
+
+        // Update the chat in the sidebar list
+        updateChatInList({
+          ...chatToUse,
+          title: updatedTitle,
+          updated_at: response.chat?.updated_at || new Date().toISOString()
+        });
+      });
+
+      // Store the typing interval in the abort controller for cleanup
+      setAbortController(prev => ({ 
+        ...controller, 
+        typingInterval 
+      }));
+
     } catch (error) {
-      if (!controller.signal.aborted) {
+      if (error.name === 'AbortError' || controller.signal.aborted || isAborted) {
+        // Request was aborted - messages already cleaned up in stopGenerating
+        console.log('Message generation was aborted');
+      } else {
         console.error('Failed to send message:', error);
         
         // Remove optimistic messages on error
         setCurrentChat(prev => ({
           ...prev,
-          messages: prev.messages.slice(0, -2)
+          messages: prev.messages.filter(msg => msg.id !== optimisticUserMessage.id)
         }));
         
         // Show error message
         alert('Failed to send message. Please try again.');
       }
-      // Clean up UI state on abort
-      if (controller.signal.aborted) {
-        setCurrentChat(prev => ({
-          ...prev,
-          messages: prev.messages.slice(0, -2) // Remove optimistic user and temp AI messages
-        }));
-      }
     } finally {
-      if (!controller.signal.aborted) {
+      if (!controller.signal.aborted && !isAborted) {
         setLoading(false);
         setIsGenerating(false);
         setAbortController(null);
@@ -891,10 +966,10 @@ const Chat = ({ resetToWelcome }) => {
                           <div className={`mt-2 text-xs ${
                             msg.role === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                           }`}>
-                            {msg.model_used} - {new Date().toLocaleDateString('en-US')} at {new Date().toLocaleTimeString('en-US', {
+                            {msg.model_used} - {new Date(msg.created_at).toLocaleDateString('en-US')} at {new Date(msg.created_at).toLocaleTimeString('en-US', {
                               hour: 'numeric',
                               minute: '2-digit',
-                              hour12: true
+                              hour12: true,
                             })}
                           </div>
                         )}
@@ -994,15 +1069,15 @@ const Chat = ({ resetToWelcome }) => {
                   />
                   <button
                     type="submit"
-                    onClick={isGenerating ? stopGenerating : undefined}
-                    disabled={!isGenerating && (!message.trim() && attachedFiles.length === 0)}
+                    onClick={(isGenerating || isTyping) ? stopGenerating : undefined}
+                    disabled={!(isGenerating || isTyping) && (!message.trim() && attachedFiles.length === 0)}
                     className={`px-3 py-3 rounded-xl transition-colors flex items-center justify-center ${
-                      isGenerating 
+                      (isGenerating || isTyping)
                         ? 'bg-gray-100 dark:bg-[#121212] hover:bg-gray-200 dark:hover:bg-[#0d0d0d] text-gray-500 dark:text-gray-400' 
                         : 'bg-transparent text-gray-500 dark:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                   >
-                    {isGenerating ? <Square className="w-5 h-5" /> : <Send className="w-5 h-5" />}
+                    {(isGenerating || isTyping) ? <Square className="w-5 h-5" /> : <Send className="w-5 h-5" />}
                   </button>
                 </form>
               </div>

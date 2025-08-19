@@ -7,7 +7,8 @@ import {
   sendChatMessage, 
   updateChatTitle,
   deleteChat,
-  getEnabledModels
+  getEnabledModels,
+  deleteMessage
 } from '../controllers/chatController.js';
 import { authenticateToken } from '../middleware/auth.js';
 
