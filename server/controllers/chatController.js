@@ -189,8 +189,13 @@ export const sendChatMessage = async (req, res) => {
       [chatId, 'user', content || '', JSON.stringify(attachments)]
     );
 
+    // Function to check if request is truly aborted
+    const isRequestAborted = () => {
+      return req.destroyed || req.socket?.destroyed || (req.aborted && req.complete === false);
+    };
+
     // Check if request was aborted before proceeding to AI
-    if (req.aborted) {
+    if (isRequestAborted()) {
       console.log('Request aborted before AI processing');
       return res.status(499).json({ error: 'Request aborted' });
     }
@@ -212,7 +217,7 @@ export const sendChatMessage = async (req, res) => {
       console.log('AI response:', modelName, chatId);
       
       // Check if request was aborted after AI response
-      if (req.aborted || req.destroyed || req.socket?.destroyed) {
+      if (isRequestAborted()) {
         console.log('Request aborted after AI response, not saving');
         return res.status(499).json({ error: 'Request aborted' });
       }
@@ -226,7 +231,7 @@ export const sendChatMessage = async (req, res) => {
       );
       
       // Final check before sending response
-      if (req.aborted || req.destroyed || req.socket?.destroyed) {
+      if (isRequestAborted()) {
         console.log('Request aborted before sending response, deleting AI message');
         await pool.query('DELETE FROM messages WHERE id = $1', [aiMessageResult.rows[0].id]);
         return res.status(499).json({ error: 'Request aborted' });
