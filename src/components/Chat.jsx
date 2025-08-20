@@ -260,8 +260,6 @@ const Chat = ({ resetToWelcome }) => {
   };
 
   const stopGenerating = () => {
-    console.log('Stop button clicked - halting generation immediately');
-    
     // Set abort flag immediately to prevent any further processing
     setIsAborted(true);
     requestInProgressRef.current = false;
@@ -280,7 +278,6 @@ const Chat = ({ resetToWelcome }) => {
     
     // Abort the API request with immediate effect
     if (abortControllerRef.current?.controller) {
-      console.log('Aborting API request');
       abortControllerRef.current.controller.abort();
     }
     
@@ -313,8 +310,6 @@ const Chat = ({ resetToWelcome }) => {
     
     // Reset abort controller
     abortControllerRef.current = null;
-    
-    console.log('Generation stopped successfully - ready for next message');
   };
 
   const sendMessage = async (e) => {
@@ -472,7 +467,6 @@ const Chat = ({ resetToWelcome }) => {
     } catch (error) {
       if (error.name === 'AbortError' || controller.signal.aborted || isAborted) {
         // Request was aborted - clean up and exit gracefully
-        console.log('Message generation was aborted - cleaning up');
         setCurrentChat(prev => ({
           ...prev,
           messages: prev.messages.filter(msg => msg.id !== optimisticUserMessage.id)
