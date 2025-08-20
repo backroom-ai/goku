@@ -37,10 +37,6 @@ class APIClient {
         throw new DOMException('Request was aborted', 'AbortError');
       }
 
-      // Handle 499 status (Client Closed Request) as successful abort
-      if (response.status === 499) {
-        throw new DOMException('Request was aborted', 'AbortError');
-      }
       const data = await response.json();
 
       if (!response.ok) {
@@ -52,11 +48,6 @@ class APIClient {
       // Re-throw abort errors so they can be handled properly
       if (error.name === 'AbortError') {
         throw error;
-      }
-      
-      // Handle network errors that might indicate abort
-      if (error.message === 'Request aborted' || error.message.includes('aborted')) {
-        throw new DOMException('Request was aborted', 'AbortError');
       }
       
       console.error('API request error:', error);
