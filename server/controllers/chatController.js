@@ -117,6 +117,11 @@ export const sendChatMessage = async (req, res) => {
     const { chatId } = req.params;
     const { content, modelName, fileCount } = req.body;
     const files = req.files || [];
+    
+    // Enhanced abort detection - check multiple abort conditions
+    const isRequestAborted = () => {
+      return req.aborted || req.destroyed || req.socket?.destroyed || req.socket?.readyState !== 'open';
+    };
 
     if ((!content || !content.trim()) && files.length === 0) {
       return res.status(400).json({ error: 'Content or files are required' });
@@ -134,6 +139,12 @@ export const sendChatMessage = async (req, res) => {
 
     if (chatResult.rows.length === 0) {
       return res.status(404).json({ error: 'Chat not found' });
+    }
+    
+    // Check if request was aborted before processing
+    if (isRequestAborted()) {
+      console.log('Request aborted before processing - returning early');
+      return res.status(499).json({ error: 'Request aborted by client' });
     }
 
     // Process uploaded files
@@ -181,7 +192,7 @@ export const sendChatMessage = async (req, res) => {
       }));
     }
 
-    // Store user message
+    // Store user message (this should always be saved)
     const userMessageResult = await pool.query(
       `INSERT INTO messages (chat_id, role, content, attachments) 
        VALUES ($1, $2, $3, $4) 
@@ -189,9 +200,9 @@ export const sendChatMessage = async (req, res) => {
       [chatId, 'user', content || '', JSON.stringify(attachments)]
     );
 
-    // Check if request was aborted before proceeding to AI
-    if (req.aborted) {
-      console.log('Request aborted before AI processing');
+    // Critical check: Verify request wasn't aborted before AI processing
+    if (isRequestAborted()) {
+      console.log('Request aborted before AI processing - stopping here');
       return res.status(499).json({ error: 'Request aborted' });
     }
 
@@ -207,17 +218,19 @@ export const sendChatMessage = async (req, res) => {
     const messages = historyResult.rows;
 
     try {
-      // Send to AI
+      // Send to AI with abort monitoring
+      console.log('Sending request to AI for model:', modelName, 'chat:', chatId);
       const response = await sendMessage(modelName, messages, { attachments }, chatId);
-      console.log('AI response:', modelName, chatId);
+      console.log('AI response received for model:', modelName, 'chat:', chatId);
       
-      // Check if request was aborted after AI response
-      if (req.aborted || req.destroyed || req.socket?.destroyed) {
-        console.log('Request aborted after AI response, not saving');
+      // CRITICAL: Check if request was aborted after AI response but before saving
+      if (isRequestAborted()) {
+        console.log('Request aborted after AI response - NOT saving to database');
         return res.status(499).json({ error: 'Request aborted' });
       }
       
-      // Store AI response
+      // Only store AI response if request is still active
+      console.log('Saving AI response to database');
       const aiMessageResult = await pool.query(
         `INSERT INTO messages (chat_id, role, content, model_used, tokens_used) 
          VALUES ($1, $2, $3, $4, $5) 
@@ -225,18 +238,20 @@ export const sendChatMessage = async (req, res) => {
         [chatId, 'assistant', response.content, modelName, response.tokensUsed]
       );
       
-      // Final check before sending response
-      if (req.aborted || req.destroyed || req.socket?.destroyed) {
-        console.log('Request aborted before sending response, deleting AI message');
+      // Final safety check before sending response to client
+      if (isRequestAborted()) {
+        console.log('Request aborted before sending response - deleting AI message from database');
         await pool.query('DELETE FROM messages WHERE id = $1', [aiMessageResult.rows[0].id]);
         return res.status(499).json({ error: 'Request aborted' });
       }
       
-      // Update chat timestamp
+      // Update chat timestamp and send successful response
       await pool.query(
         'UPDATE chats SET updated_at = now() WHERE id = $1',
         [chatId]
       );
+      
+      console.log('Successfully completed message processing for chat:', chatId);
 
       res.json({
         userMessage: {
@@ -256,7 +271,15 @@ export const sendChatMessage = async (req, res) => {
         }
       });
     } catch (aiError) {
+      // Handle AI service errors
       console.error('AI API error:', aiError);
+      
+      // If it's an abort error, don't treat it as a failure
+      if (aiError.name === 'AbortError') {
+        console.log('AI request was aborted - returning abort status');
+        return res.status(499).json({ error: 'Request aborted' });
+      }
+      
       res.status(500).json({ 
         error: 'AI service error',
         details: aiError.message 
@@ -264,6 +287,12 @@ export const sendChatMessage = async (req, res) => {
     }
   } catch (error) {
     console.error('Send message error:', error);
+    
+    // Handle abort errors gracefully
+    if (error.name === 'AbortError') {
+      return res.status(499).json({ error: 'Request aborted' });
+    }
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 };

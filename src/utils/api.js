@@ -32,21 +32,28 @@ class APIClient {
     try {
       const response = await fetch(url, config);
       
-      // Check if the request was aborted
+      // Enhanced abort detection
       if (config.signal && config.signal.aborted) {
+        console.log('Request was aborted during fetch');
         throw new DOMException('Request was aborted', 'AbortError');
       }
 
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle abort status from server
+        if (response.status === 499) {
+          console.log('Server confirmed request was aborted');
+          throw new DOMException('Request was aborted', 'AbortError');
+        }
         throw new Error(data.error || 'API request failed');
       }
 
       return data;
     } catch (error) {
-      // Re-throw abort errors so they can be handled properly
+      // Enhanced abort error handling
       if (error.name === 'AbortError') {
+        console.log('API request aborted:', error.message);
         throw error;
       }
       
@@ -106,17 +113,17 @@ class APIClient {
     
     formData.append('fileCount', files.length.toString());
 
-    // Add abort signal handling
+    // Enhanced abort signal handling with immediate detection
     if (signal) {
       signal.addEventListener('abort', () => {
-        console.log('API request signal aborted');
+        console.log('API request abort signal triggered - request will be cancelled');
       });
     }
 
     return this.request(`/chat/${chatId}/message`, {
       method: 'POST',
       body: formData,
-      signal: signal, // Pass the abort signal
+      signal: signal, // Critical: Pass the abort signal to fetch
       headers: {
         // Don't set Content-Type for FormData, let browser set it with boundary
       }

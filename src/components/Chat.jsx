@@ -29,6 +29,7 @@ const Chat = ({ resetToWelcome }) => {
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const requestInProgressRef = useRef(false);
 
   useEffect(() => {
     loadChats();
@@ -261,8 +262,9 @@ const Chat = ({ resetToWelcome }) => {
   const stopGenerating = () => {
     console.log('Stop button clicked - halting generation immediately');
     
-    // Set abort flag to prevent any further processing
+    // Set abort flag immediately to prevent any further processing
     setIsAborted(true);
+    requestInProgressRef.current = false;
     
     // Immediately stop all UI states
     setIsGenerating(false);
@@ -270,36 +272,278 @@ const Chat = ({ resetToWelcome }) => {
     setTypingText('');
     setLoading(false);
     
-    // Clear typing interval immediately
+    // Clear typing interval and animation immediately
     if (abortControllerRef.current?.typingInterval) {
       clearInterval(abortControllerRef.current.typingInterval);
       abortControllerRef.current.typingInterval = null;
     }
     
-    // Abort the API request immediately
+    // Abort the API request with immediate effect
     if (abortControllerRef.current?.controller) {
       console.log('Aborting API request');
       abortControllerRef.current.controller.abort();
     }
     
-    // Clean up pending AI message immediately
+    // Remove any pending AI message from state immediately
     if (pendingAiMessage) {
-      // Delete the incomplete message from database asynchronously
-      api.deleteMessage(pendingAiMessage.id).catch(error => {
-        console.warn('Failed to delete incomplete message:', error);
-      });
       setPendingAiMessage(null);
     }
     
-    // Remove any optimistic messages from UI immediately
+    // Clean up UI state - remove optimistic messages immediately
     setCurrentChat(prev => {
       if (!prev?.messages) return prev;
       
       const messages = [...prev.messages];
-      let removedCount = 0;
       
-      // Remove optimistic user message (has numeric timestamp ID)
-      for (let i = messages.length - 1; i >= 0 && removedCount < 2; i--) {
+      // Remove any messages that were added during this generation cycle
+      const filteredMessages = messages.filter(message => {
+        // Keep messages that have proper UUIDs (already saved to database)
+        // Remove optimistic messages (numeric IDs) and incomplete AI messages
+        if (typeof message.id === 'number') {
+          return false; // Remove optimistic user messages
+        }
+        if (message.role === 'assistant' && !message.id) {
+          return false; // Remove incomplete AI messages
+        }
+        return true; // Keep all other messages
+      });
+      
+      return { ...prev, messages: filteredMessages };
+    });
+    
+    // Reset abort controller
+    abortControllerRef.current = null;
+    
+    console.log('Generation stopped successfully - ready for next message');
+  };
+
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    if ((!message.trim() && attachedFiles.length === 0) || !selectedModel || loading || isGenerating) return;
+
+    // Prevent multiple simultaneous requests
+    if (requestInProgressRef.current) {
+      console.log('Request already in progress, ignoring new request');
+      return;
+    }
+
+    // Reset abort flag and set request in progress
+    setIsAborted(false);
+    requestInProgressRef.current = true;
+
+    // Create new chat if none exists
+    let chatToUse = currentChat;
+    if (!chatToUse) {
+      try {
+        chatToUse = await createNewChat();
+      } catch (error) {
+        console.error('Failed to create chat:', error);
+        requestInProgressRef.current = false;
+        return;
+      }
+    }
+
+    const userMessage = message;
+    const files = [...attachedFiles];
+    const isFirstMessage = !chatToUse.messages || chatToUse.messages.length === 0;
+    setMessage('');
+    setAttachedFiles([]);
+    setLoading(true);
+    setIsGenerating(true);
+
+    // Create abort controller for stopping generation
+    const controller = new AbortController();
+    abortControllerRef.current = { controller };
+
+    // Add abort signal listener for immediate detection
+    controller.signal.addEventListener('abort', () => {
+      console.log('Abort signal triggered - stopping all operations');
+      setIsAborted(true);
+      requestInProgressRef.current = false;
+    });
+
+    const optimisticUserMessage = {
+      id: Date.now(),
+      role: 'user',
+      content: userMessage,
+      created_at: new Date().toISOString(),
+      attachments: files.map(f => ({
+        name: f.name,
+        size: f.size,
+        type: f.type
+      }))
+    };
+
+    // Add user message immediately for better UX
+    setCurrentChat(prev => ({
+      ...prev,
+      messages: [...(prev?.messages || []), optimisticUserMessage]
+    }));
+
+    try {
+      // Check if aborted before making API call
+      if (controller.signal.aborted || isAborted) {
+        console.log('Request aborted before API call');
+        requestInProgressRef.current = false;
+        return;
+      }
+
+      const response = await api.sendMessage(chatToUse.id, userMessage, selectedModel, files, controller.signal);
+      
+      // Critical check: Verify request wasn't aborted during API call
+      if (controller.signal.aborted || isAborted || !requestInProgressRef.current) {
+        console.log('Request was aborted during API call - discarding response');
+        // Clean up optimistic message
+        setCurrentChat(prev => ({
+          ...prev,
+          messages: prev.messages.filter(msg => msg.id !== optimisticUserMessage.id)
+        }));
+        return;
+      }
+      
+      // Generate title for first message
+      let updatedTitle = chatToUse.title;
+      if (isFirstMessage && userMessage.trim()) {
+        updatedTitle = generateChatTitle(userMessage);
+        try {
+          await api.updateChatTitle(chatToUse.id, updatedTitle);
+        } catch (titleError) {
+          console.warn('Failed to update chat title:', titleError);
+        }
+      }
+
+      // Store the AI message for potential cleanup
+      setPendingAiMessage(response.aiMessage);
+      
+      // Start typing animation for AI response
+      const aiMessage = response.aiMessage;
+      const typingInterval = typeMessage(aiMessage.content, () => {
+        // Final check before completing - ensure not aborted during typing
+        if (controller.signal.aborted || isAborted || !requestInProgressRef.current) {
+          console.log('Typing animation aborted before completion');
+          return;
+        }
+        
+        // Animation completed successfully - finalize the message
+        setPendingAiMessage(null);
+        requestInProgressRef.current = false;
+        
+        // Replace the optimistic user message with the server response
+        setCurrentChat(prev => {
+          if (!prev?.messages) return prev;
+          
+          // Find and replace the optimistic user message
+          const messages = [...prev.messages];
+          for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].role === 'user' && messages[i].id === optimisticUserMessage.id) {
+              // Replace optimistic message with server response and add AI message
+              messages[i] = response.userMessage;
+              messages.push(aiMessage);
+              break;
+            }
+          }
+          
+          return {
+            ...prev,
+            title: updatedTitle,
+            messages,
+            updated_at: response.chat?.updated_at || new Date().toISOString()
+          };
+        });
+
+        // Update the chat in the sidebar list
+        updateChatInList({
+          ...chatToUse,
+          title: updatedTitle,
+          updated_at: response.chat?.updated_at || new Date().toISOString()
+        });
+
+        // Reset states after successful completion
+        setLoading(false);
+        setIsGenerating(false);
+        abortControllerRef.current = null;
+      });
+
+      // Store the typing interval in the abort controller ref for cleanup
+      if (abortControllerRef.current) {
+        abortControllerRef.current.typingInterval = typingInterval;
+      }
+
+    } catch (error) {
+      if (error.name === 'AbortError' || controller.signal.aborted || isAborted) {
+        // Request was aborted - clean up and exit gracefully
+        console.log('Message generation was aborted - cleaning up');
+        setCurrentChat(prev => ({
+          ...prev,
+          messages: prev.messages.filter(msg => msg.id !== optimisticUserMessage.id)
+        }));
+        requestInProgressRef.current = false;
+        return;
+      } else {
+        console.error('Failed to send message:', error);
+        
+        // Remove optimistic messages on error
+        setCurrentChat(prev => ({
+          ...prev,
+          messages: prev.messages.filter(msg => msg.id !== optimisticUserMessage.id)
+        }));
+        
+        // Reset states on error
+        setLoading(false);
+        setIsGenerating(false);
+        setIsTyping(false);
+        setTypingText('');
+        abortControllerRef.current = null;
+        requestInProgressRef.current = false;
+        
+        // Show error message
+        alert('Failed to send message. Please try again.');
+      }
+    }
+  };
+
+  // Enhanced typing animation with abort checks
+  const typeMessage = (text, callback) => {
+    // Check if already aborted before starting
+    if (isAborted || abortControllerRef.current?.controller?.signal.aborted || !requestInProgressRef.current) {
+      console.log('Typing animation cancelled before start');
+      return null;
+    }
+    
+    setIsTyping(true);
+    setTypingText('');
+    let index = -1;
+    
+    const typeInterval = setInterval(() => {
+      // Check if generation was stopped at each character
+      if (isAborted || abortControllerRef.current?.controller?.signal.aborted || !requestInProgressRef.current) {
+        console.log('Typing animation stopped mid-typing');
+        clearInterval(typeInterval);
+        setIsTyping(false);
+        setTypingText('');
+        return;
+      }
+      
+      index++; // Increment first
+      if (index < text.length) {
+        setTypingText(prev => prev + text[index]);
+      } else {
+        clearInterval(typeInterval);
+        setIsTyping(false);
+        // Only call callback if not aborted
+        if (!isAborted && !abortControllerRef.current?.controller?.signal.aborted && requestInProgressRef.current) {
+          callback();
+        }
+      }
+    }, 20); // Slightly faster typing for better UX
+    
+    // Store interval reference for cleanup
+    if (abortControllerRef.current) {
+      abortControllerRef.current.typingInterval = typeInterval;
+    }
+    
+    return typeInterval;
+  };
         const message = messages[i];
         // Remove optimistic user message or any incomplete AI message
         if ((message.id && typeof message.id === 'number') || 
