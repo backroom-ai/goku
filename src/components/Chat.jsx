@@ -261,7 +261,7 @@ const Chat = ({ resetToWelcome }) => {
     return typeInterval;
   };
 
-  const stopGenerating = () => {
+  const stopGenerating = async () => {
     // Set abort flag immediately to prevent any further processing
     setIsAborted(true);
     requestInProgressRef.current = false;
@@ -311,68 +311,6 @@ const Chat = ({ resetToWelcome }) => {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage && lastMessage.role === 'assistant' && 
           (lastMessage.id === currentAiMessageIdRef.current || !lastMessage.id)) {
-        messages.pop();
-      }
-      
-      // Also remove any optimistic user messages (numeric IDs)
-      const filteredMessages = messages.filter(message => {
-        if (typeof message.id === 'number') {
-          return false; // Remove optimistic user messages
-        }
-        return true; // Keep all other messages
-      });
-      
-      return { ...prev, messages: filteredMessages };
-    });
-    
-    // Reset abort controller
-    abortControllerRef.current = null;
-  };
-
-    // Set abort flag immediately to prevent any further processing
-    setIsAborted(true);
-    requestInProgressRef.current = false;
-    
-    // Immediately stop all UI states
-    setIsGenerating(false);
-    setIsTyping(false);
-    setTypingText('');
-    setLoading(false);
-    
-    // Clear typing interval and animation immediately
-    if (abortControllerRef.current?.typingInterval) {
-      clearInterval(abortControllerRef.current.typingInterval);
-      abortControllerRef.current.typingInterval = null;
-    }
-    
-    // Abort the API request with immediate effect
-    if (abortControllerRef.current?.controller) {
-      abortControllerRef.current.controller.abort();
-    }
-    
-    // Delete AI message from database if it exists
-    if (currentAiMessageIdRef.current) {
-      try {
-        await api.deleteMessage(currentAiMessageIdRef.current);
-        console.log('AI message deleted from database');
-      } catch (error) {
-        console.error('Failed to delete AI message:', error);
-      }
-    }
-    
-    // Remove any pending AI message from state immediately
-    setPendingAiMessage(null);
-    currentAiMessageIdRef.current = null;
-    
-    // Clean up UI state - remove any messages that were being generated
-    setCurrentChat(prev => {
-      if (!prev?.messages) return prev;
-      
-      const messages = [...prev.messages];
-      
-      // Remove the last AI message if it was being generated
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage && lastMessage.role === 'assistant') {
         messages.pop();
       }
       
