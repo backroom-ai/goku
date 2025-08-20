@@ -389,7 +389,7 @@ const Chat = ({ resetToWelcome }) => {
       
       // Start typing animation for AI response
       const aiMessage = response.aiMessage;
-        
+      const typingInterval = typeMessage(aiMessage.content, () => {
         // Animation completed successfully - finalize the message
         setPendingAiMessage(null);
         requestInProgressRef.current = false;
@@ -435,6 +435,7 @@ const Chat = ({ resetToWelcome }) => {
         abortControllerRef.current.typingInterval = typingInterval;
       }
 
+    } catch (error) {
       console.error('Failed to send message:', error);
       
       // Remove optimistic messages on error
