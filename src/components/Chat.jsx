@@ -329,7 +329,6 @@ const Chat = ({ resetToWelcome }) => {
     abortControllerRef.current = null;
   };
 
-  const stopGenerating = async () => {
     // Set abort flag immediately to prevent any further processing
     setIsAborted(true);
     requestInProgressRef.current = false;
