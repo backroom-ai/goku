@@ -231,7 +231,7 @@ class APIClient {
   async deleteMessage(messageId, signal = null) {
     return this.request(`/chat/message/${messageId}`, {
       method: 'DELETE',
-      signal: signal, // Support abortion for delete operations too
+      signal: signal,
     });
   }
   async cancelRequest (chatId) {
