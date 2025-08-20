@@ -32,28 +32,15 @@ class APIClient {
     try {
       const response = await fetch(url, config);
       
-      // Enhanced abort detection
-      if (config.signal && config.signal.aborted) {
-        throw new DOMException('Request was aborted', 'AbortError');
-      }
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Handle abort status from server
-        if (response.status === 499) {
-          throw new DOMException('Request was aborted', 'AbortError');
-        }
         throw new Error(data.error || 'API request failed');
       }
 
       return data;
     } catch (error) {
-      // Enhanced abort error handling
-      if (error.name === 'AbortError') {
-        throw error;
-      }
-      
       console.error('API request error:', error);
       throw error;
     }

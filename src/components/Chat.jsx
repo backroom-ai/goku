@@ -350,12 +350,6 @@ const Chat = ({ resetToWelcome }) => {
     const controller = new AbortController();
     abortControllerRef.current = { controller };
 
-    // Add abort signal listener for immediate detection
-    controller.signal.addEventListener('abort', () => {
-      console.log('Abort signal triggered - stopping all operations');
-      setIsAborted(true);
-      requestInProgressRef.current = false;
-    });
 
     const optimisticUserMessage = {
       id: Date.now(),
@@ -376,25 +370,8 @@ const Chat = ({ resetToWelcome }) => {
     }));
 
     try {
-      // Check if aborted before making API call
-      if (controller.signal.aborted || isAborted) {
-        console.log('Request aborted before API call');
-        requestInProgressRef.current = false;
-        return;
-      }
 
-      const response = await api.sendMessage(chatToUse.id, userMessage, selectedModel, files, controller.signal);
-      
-      // Critical check: Verify request wasn't aborted during API call
-      if (controller.signal.aborted || isAborted || !requestInProgressRef.current) {
-        console.log('Request was aborted during API call - discarding response');
-        // Clean up optimistic message
-        setCurrentChat(prev => ({
-          ...prev,
-          messages: prev.messages.filter(msg => msg.id !== optimisticUserMessage.id)
-        }));
-        return;
-      }
+      const response = await api.sendMessage(chatToUse.id, userMessage, selectedModel, files);
       
       // Generate title for first message
       let updatedTitle = chatToUse.title;
@@ -412,12 +389,6 @@ const Chat = ({ resetToWelcome }) => {
       
       // Start typing animation for AI response
       const aiMessage = response.aiMessage;
-      const typingInterval = typeMessage(aiMessage.content, () => {
-        // Final check before completing - ensure not aborted during typing
-        if (controller.signal.aborted || isAborted || !requestInProgressRef.current) {
-          console.log('Typing animation aborted before completion');
-          return;
-        }
         
         // Animation completed successfully - finalize the message
         setPendingAiMessage(null);
@@ -464,35 +435,24 @@ const Chat = ({ resetToWelcome }) => {
         abortControllerRef.current.typingInterval = typingInterval;
       }
 
-    } catch (error) {
-      if (error.name === 'AbortError' || controller.signal.aborted || isAborted) {
-        // Request was aborted - clean up and exit gracefully
-        setCurrentChat(prev => ({
-          ...prev,
-          messages: prev.messages.filter(msg => msg.id !== optimisticUserMessage.id)
-        }));
-        requestInProgressRef.current = false;
-        return;
-      } else {
-        console.error('Failed to send message:', error);
-        
-        // Remove optimistic messages on error
-        setCurrentChat(prev => ({
-          ...prev,
-          messages: prev.messages.filter(msg => msg.id !== optimisticUserMessage.id)
-        }));
-        
-        // Reset states on error
-        setLoading(false);
-        setIsGenerating(false);
-        setIsTyping(false);
-        setTypingText('');
-        abortControllerRef.current = null;
-        requestInProgressRef.current = false;
-        
-        // Show error message
-        alert('Failed to send message. Please try again.');
-      }
+      console.error('Failed to send message:', error);
+      
+      // Remove optimistic messages on error
+      setCurrentChat(prev => ({
+        ...prev,
+        messages: prev.messages.filter(msg => msg.id !== optimisticUserMessage.id)
+      }));
+      
+      // Reset states on error
+      setLoading(false);
+      setIsGenerating(false);
+      setIsTyping(false);
+      setTypingText('');
+      abortControllerRef.current = null;
+      requestInProgressRef.current = false;
+      
+      // Show error message
+      alert('Failed to send message. Please try again.');
     }
   };
 

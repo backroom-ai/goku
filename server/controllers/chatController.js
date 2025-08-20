@@ -118,10 +118,6 @@ export const sendChatMessage = async (req, res) => {
     const { content, modelName, fileCount } = req.body;
     const files = req.files || [];
     
-    // Simple abort detection - only check if request is actually aborted
-    const isRequestAborted = () => {
-      return req.aborted || req.destroyed;
-    };
 
     if ((!content || !content.trim()) && files.length === 0) {
       return res.status(400).json({ error: 'Content or files are required' });
@@ -208,16 +204,10 @@ export const sendChatMessage = async (req, res) => {
     const messages = historyResult.rows;
 
     try {
-      // Send to AI with abort monitoring
+      // Send to AI
       const response = await sendMessage(modelName, messages, { attachments }, chatId);
       
-      // Check if request was aborted after AI response but before saving
-      if (isRequestAborted()) {
-        console.log('Request aborted after AI response - NOT saving to database');
-        return res.status(499).json({ error: 'Request aborted' });
-      }
-      
-      // Only store AI response if request is still active
+      // Store AI response
       const aiMessageResult = await pool.query(
         `INSERT INTO messages (chat_id, role, content, model_used, tokens_used) 
          VALUES ($1, $2, $3, $4, $5) 
@@ -225,13 +215,7 @@ export const sendChatMessage = async (req, res) => {
         [chatId, 'assistant', response.content, modelName, response.tokensUsed]
       );
       
-      // Final safety check before sending response to client
-      if (isRequestAborted()) {
-        await pool.query('DELETE FROM messages WHERE id = $1', [aiMessageResult.rows[0].id]);
-        return res.status(499).json({ error: 'Request aborted' });
-      }
-      
-      // Update chat timestamp and send successful response
+      // Update chat timestamp
       await pool.query(
         'UPDATE chats SET updated_at = now() WHERE id = $1',
         [chatId]
@@ -259,11 +243,6 @@ export const sendChatMessage = async (req, res) => {
       // Handle AI service errors
       console.error('AI API error:', aiError);
       
-      // If it's an abort error, don't treat it as a failure
-      if (aiError.name === 'AbortError') {
-        return res.status(499).json({ error: 'Request aborted' });
-      }
-      
       res.status(500).json({ 
         error: 'AI service error',
         details: aiError.message 
@@ -271,11 +250,6 @@ export const sendChatMessage = async (req, res) => {
     }
   } catch (error) {
     console.error('Send message error:', error);
-    
-    // Handle abort errors gracefully
-    if (error.name === 'AbortError') {
-      return res.status(499).json({ error: 'Request aborted' });
-    }
     
     res.status(500).json({ error: 'Internal server error' });
   }
