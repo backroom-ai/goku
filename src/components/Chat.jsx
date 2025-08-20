@@ -22,13 +22,13 @@ const Chat = ({ resetToWelcome }) => {
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [abortController, setAbortController] = useState(null);
   const [typingText, setTypingText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [pendingAiMessage, setPendingAiMessage] = useState(null);
   const [isAborted, setIsAborted] = useState(false);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     loadChats();
@@ -49,12 +49,14 @@ const Chat = ({ resetToWelcome }) => {
       setIsTyping(false);
       setTypingText('');
       setPendingAiMessage(null);
-      if (abortController) {
-        if (abortController.typingInterval) {
-          clearInterval(abortController.typingInterval);
+      if (abortControllerRef.current) {
+        if (abortControllerRef.current.typingInterval) {
+          clearInterval(abortControllerRef.current.typingInterval);
         }
-        abortController.abort();
-        setAbortController(null);
+        if (abortControllerRef.current.controller) {
+          abortControllerRef.current.controller.abort();
+        }
+        abortControllerRef.current = null;
       }
     }
   }, [resetToWelcome]);
@@ -221,7 +223,7 @@ const Chat = ({ resetToWelcome }) => {
     
     const typeInterval = setInterval(() => {
       // Check if generation was stopped
-      if (abortController?.signal.aborted) {
+      if (abortControllerRef.current?.controller?.signal.aborted) {
         clearInterval(typeInterval);
         setIsTyping(false);
         return;
@@ -245,12 +247,12 @@ const Chat = ({ resetToWelcome }) => {
     setIsAborted(true);
     
     // Clear typing interval if it exists
-    if (abortController?.typingInterval) {
-      clearInterval(abortController.typingInterval);
+    if (abortControllerRef.current?.typingInterval) {
+      clearInterval(abortControllerRef.current.typingInterval);
     }
     
-    if (abortController) {
-      abortController.abort();
+    if (abortControllerRef.current?.controller) {
+      abortControllerRef.current.controller.abort();
     }
     
     // Clear typing animation immediately
@@ -284,7 +286,7 @@ const Chat = ({ resetToWelcome }) => {
       return { ...prev, messages };
     });
     
-    setAbortController(null);
+    abortControllerRef.current = null;
   };
 
   const sendMessage = async (e) => {
@@ -315,7 +317,7 @@ const Chat = ({ resetToWelcome }) => {
 
     // Create abort controller for stopping generation
     const controller = new AbortController();
-    setAbortController(controller);
+    abortControllerRef.current = { controller };
 
     const optimisticUserMessage = {
       id: Date.now(),
@@ -338,18 +340,6 @@ const Chat = ({ resetToWelcome }) => {
     try {
       const response = await api.sendMessage(chatToUse.id, userMessage, selectedModel, files, controller.signal);
       
-      // Check if generation was aborted before processing response
-      if (controller.signal.aborted || isAborted) {
-        // If aborted, delete any messages that were created on the server
-        if (response?.userMessage?.id) {
-          api.deleteMessage(response.userMessage.id).catch(console.error);
-        }
-        if (response?.aiMessage?.id) {
-          api.deleteMessage(response.aiMessage.id).catch(console.error);
-        }
-        return; // Exit early
-      }
-      
       // Generate title for first message
       let updatedTitle = chatToUse.title;
       if (isFirstMessage && userMessage.trim()) {
@@ -368,7 +358,7 @@ const Chat = ({ resetToWelcome }) => {
       const aiMessage = response.aiMessage;
       const typingInterval = typeMessage(aiMessage.content, () => {
         // Check again if aborted during typing animation
-        if (controller.signal.aborted || isAborted) {
+        if (controller.signal.aborted) {
           return;
         }
         
@@ -404,17 +394,21 @@ const Chat = ({ resetToWelcome }) => {
           title: updatedTitle,
           updated_at: response.chat?.updated_at || new Date().toISOString()
         });
+
+        // Reset states after successful completion
+        setLoading(false);
+        setIsGenerating(false);
+        abortControllerRef.current = null;
       });
 
-      // Store the typing interval in the abort controller for cleanup
-      setAbortController(prev => ({ 
-        ...controller, 
-        typingInterval 
-      }));
+      // Store the typing interval in the abort controller ref for cleanup
+      if (abortControllerRef.current) {
+        abortControllerRef.current.typingInterval = typingInterval;
+      }
 
     } catch (error) {
-      if (error.name === 'AbortError' || controller.signal.aborted || isAborted) {
-        // Request was aborted - messages already cleaned up in stopGenerating
+      if (error.name === 'AbortError' || controller.signal.aborted) {
+        // Request was aborted - states will be cleaned up in stopGenerating
         console.log('Message generation was aborted');
       } else {
         console.error('Failed to send message:', error);
@@ -425,14 +419,13 @@ const Chat = ({ resetToWelcome }) => {
           messages: prev.messages.filter(msg => msg.id !== optimisticUserMessage.id)
         }));
         
-        // Show error message
-        alert('Failed to send message. Please try again.');
-      }
-    } finally {
-      if (!controller.signal.aborted && !isAborted) {
+        // Reset states on error
         setLoading(false);
         setIsGenerating(false);
-        setAbortController(null);
+        abortControllerRef.current = null;
+        
+        // Show error message
+        alert('Failed to send message. Please try again.');
       }
     }
   };
