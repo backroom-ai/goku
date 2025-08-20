@@ -217,15 +217,23 @@ const Chat = ({ resetToWelcome }) => {
 
   // Typing animation effect
   const typeMessage = (text, callback) => {
+    // Check if already aborted before starting
+    if (isAborted || abortControllerRef.current?.controller?.signal.aborted) {
+      console.log('Typing animation cancelled before start');
+      return null;
+    }
+    
     setIsTyping(true);
     setTypingText('');
     let index = -1;
     
     const typeInterval = setInterval(() => {
-      // Check if generation was stopped
-      if (abortControllerRef.current?.controller?.signal.aborted) {
+      // Check if generation was stopped at each interval
+      if (isAborted || abortControllerRef.current?.controller?.signal.aborted) {
+        console.log('Typing animation stopped mid-typing');
         clearInterval(typeInterval);
         setIsTyping(false);
+        setTypingText('');
         return;
       }
       
@@ -235,58 +243,78 @@ const Chat = ({ resetToWelcome }) => {
       } else {
         clearInterval(typeInterval);
         setIsTyping(false);
+        // Only call callback if not aborted
+        if (!isAborted && !abortControllerRef.current?.controller?.signal.aborted) {
         callback();
+        }
       }
     }, 2.5);
+    
+    // Store interval reference for cleanup
+    if (abortControllerRef.current) {
+      abortControllerRef.current.typingInterval = typeInterval;
+    }
     
     return typeInterval;
   };
 
   const stopGenerating = () => {
-    // Set abort flag first
+    console.log('Stop button clicked - halting generation immediately');
+    
+    // Set abort flag to prevent any further processing
     setIsAborted(true);
     
-    // Clear typing interval if it exists
-    if (abortControllerRef.current?.typingInterval) {
-      clearInterval(abortControllerRef.current.typingInterval);
-    }
-    
-    if (abortControllerRef.current?.controller) {
-      abortControllerRef.current.controller.abort();
-    }
-    
-    // Clear typing animation immediately
+    // Immediately stop all UI states
     setIsGenerating(false);
     setIsTyping(false);
     setTypingText('');
     setLoading(false);
     
-    // Remove the pending AI message from UI and mark for deletion
+    // Clear typing interval immediately
+    if (abortControllerRef.current?.typingInterval) {
+      clearInterval(abortControllerRef.current.typingInterval);
+      abortControllerRef.current.typingInterval = null;
+    }
+    
+    // Abort the API request immediately
+    if (abortControllerRef.current?.controller) {
+      abortControllerRef.current.controller.abort();
+    }
+    
+    // Clean up pending AI message immediately
     if (pendingAiMessage) {
-      // Delete the incomplete message from database
+      // Delete the incomplete message from database asynchronously
       api.deleteMessage(pendingAiMessage.id).catch(error => {
-        console.error('Failed to delete incomplete message:', error);
+        console.warn('Failed to delete incomplete message:', error);
       });
-      
       setPendingAiMessage(null);
     }
     
-    // Remove the optimistic user message from UI immediately
+    // Remove any optimistic messages from UI immediately
     setCurrentChat(prev => {
       if (!prev?.messages) return prev;
-      // Find and remove the last user message (optimistic)
+      
       const messages = [...prev.messages];
-      for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].id && typeof messages[i].id === 'number') {
-          // This is likely the optimistic message (has numeric timestamp ID)
+      let removedCount = 0;
+      
+      // Remove optimistic user message (has numeric timestamp ID)
+      for (let i = messages.length - 1; i >= 0 && removedCount < 2; i--) {
+        const message = messages[i];
+        // Remove optimistic user message or any incomplete AI message
+        if ((message.id && typeof message.id === 'number') || 
+            (message.role === 'assistant' && !message.id)) {
           messages.splice(i, 1);
-          break;
+          removedCount++;
         }
       }
+      
       return { ...prev, messages };
     });
     
+    // Reset abort controller
     abortControllerRef.current = null;
+    
+    console.log('Generation stopped successfully');
   };
 
   const sendMessage = async (e) => {
@@ -340,6 +368,12 @@ const Chat = ({ resetToWelcome }) => {
     try {
       const response = await api.sendMessage(chatToUse.id, userMessage, selectedModel, files, controller.signal);
       
+      // Check if request was aborted before processing response
+      if (controller.signal.aborted || isAborted) {
+        console.log('Request was aborted, skipping response processing');
+        return;
+      }
+      
       // Generate title for first message
       let updatedTitle = chatToUse.title;
       if (isFirstMessage && userMessage.trim()) {
@@ -357,8 +391,9 @@ const Chat = ({ resetToWelcome }) => {
       // Start typing animation for AI response
       const aiMessage = response.aiMessage;
       const typingInterval = typeMessage(aiMessage.content, () => {
-        // Check again if aborted during typing animation
-        if (controller.signal.aborted) {
+        // Check if aborted during typing animation
+        if (controller.signal.aborted || isAborted) {
+          console.log('Typing animation aborted');
           return;
         }
         
@@ -407,9 +442,10 @@ const Chat = ({ resetToWelcome }) => {
       }
 
     } catch (error) {
-      if (error.name === 'AbortError' || controller.signal.aborted) {
+      if (error.name === 'AbortError' || controller.signal.aborted || isAborted) {
         // Request was aborted - states will be cleaned up in stopGenerating
         console.log('Message generation was aborted');
+        return;
       } else {
         console.error('Failed to send message:', error);
         
@@ -422,6 +458,8 @@ const Chat = ({ resetToWelcome }) => {
         // Reset states on error
         setLoading(false);
         setIsGenerating(false);
+        setIsTyping(false);
+        setTypingText('');
         abortControllerRef.current = null;
         
         // Show error message

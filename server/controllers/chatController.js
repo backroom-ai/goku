@@ -189,6 +189,11 @@ export const sendChatMessage = async (req, res) => {
       [chatId, 'user', content || '', JSON.stringify(attachments)]
     );
 
+    // Check if request was aborted before proceeding to AI
+    if (req.aborted) {
+      console.log('Request aborted before AI processing');
+      return res.status(499).json({ error: 'Request aborted' });
+    }
     // Get chat history for context
     const historyResult = await pool.query(
       `SELECT role, content 
@@ -204,6 +209,13 @@ export const sendChatMessage = async (req, res) => {
       // Send to AI
       const response = await sendMessage(modelName, messages, { attachments }, chatId);
       console.log('AI response:', modelName, chatId);
+      
+      // Check if request was aborted after AI response
+      if (req.aborted) {
+        console.log('Request aborted after AI response, not saving');
+        return res.status(499).json({ error: 'Request aborted' });
+      }
+      
       // Store AI response
       const aiMessageResult = await pool.query(
         `INSERT INTO messages (chat_id, role, content, model_used, tokens_used) 
@@ -211,6 +223,13 @@ export const sendChatMessage = async (req, res) => {
          RETURNING id, created_at`,
         [chatId, 'assistant', response.content, modelName, response.tokensUsed]
       );
+      
+      // Final check before sending response
+      if (req.aborted) {
+        console.log('Request aborted before sending response, deleting AI message');
+        await pool.query('DELETE FROM messages WHERE id = $1', [aiMessageResult.rows[0].id]);
+        return res.status(499).json({ error: 'Request aborted' });
+      }
       
       // Update chat timestamp
       await pool.query(
