@@ -118,9 +118,9 @@ export const sendChatMessage = async (req, res) => {
     const { content, modelName, fileCount } = req.body;
     const files = req.files || [];
     
-    // Enhanced abort detection - check multiple abort conditions
+    // Simple abort detection - only check if request is actually aborted
     const isRequestAborted = () => {
-      return req.aborted || req.destroyed || req.socket?.destroyed || req.socket?.readyState !== 'open';
+      return req.aborted || req.destroyed;
     };
 
     if ((!content || !content.trim()) && files.length === 0) {
@@ -141,11 +141,6 @@ export const sendChatMessage = async (req, res) => {
       return res.status(404).json({ error: 'Chat not found' });
     }
     
-    // Check if request was aborted before processing
-    if (isRequestAborted()) {
-      console.log('Request aborted before processing - returning early');
-      return res.status(499).json({ error: 'Request aborted by client' });
-    }
 
     // Process uploaded files
     let attachments = [];
@@ -200,11 +195,6 @@ export const sendChatMessage = async (req, res) => {
       [chatId, 'user', content || '', JSON.stringify(attachments)]
     );
 
-    // Critical check: Verify request wasn't aborted before AI processing
-    if (isRequestAborted()) {
-      console.log('Request aborted before AI processing - stopping here');
-      return res.status(499).json({ error: 'Request aborted' });
-    }
 
     // Get chat history for context
     const historyResult = await pool.query(
@@ -219,18 +209,15 @@ export const sendChatMessage = async (req, res) => {
 
     try {
       // Send to AI with abort monitoring
-      console.log('Sending request to AI for model:', modelName, 'chat:', chatId);
       const response = await sendMessage(modelName, messages, { attachments }, chatId);
-      console.log('AI response received for model:', modelName, 'chat:', chatId);
       
-      // CRITICAL: Check if request was aborted after AI response but before saving
+      // Check if request was aborted after AI response but before saving
       if (isRequestAborted()) {
         console.log('Request aborted after AI response - NOT saving to database');
         return res.status(499).json({ error: 'Request aborted' });
       }
       
       // Only store AI response if request is still active
-      console.log('Saving AI response to database');
       const aiMessageResult = await pool.query(
         `INSERT INTO messages (chat_id, role, content, model_used, tokens_used) 
          VALUES ($1, $2, $3, $4, $5) 
@@ -240,7 +227,6 @@ export const sendChatMessage = async (req, res) => {
       
       // Final safety check before sending response to client
       if (isRequestAborted()) {
-        console.log('Request aborted before sending response - deleting AI message from database');
         await pool.query('DELETE FROM messages WHERE id = $1', [aiMessageResult.rows[0].id]);
         return res.status(499).json({ error: 'Request aborted' });
       }
@@ -251,7 +237,6 @@ export const sendChatMessage = async (req, res) => {
         [chatId]
       );
       
-      console.log('Successfully completed message processing for chat:', chatId);
 
       res.json({
         userMessage: {
@@ -276,7 +261,6 @@ export const sendChatMessage = async (req, res) => {
       
       // If it's an abort error, don't treat it as a failure
       if (aiError.name === 'AbortError') {
-        console.log('AI request was aborted - returning abort status');
         return res.status(499).json({ error: 'Request aborted' });
       }
       

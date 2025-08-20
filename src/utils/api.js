@@ -34,7 +34,6 @@ class APIClient {
       
       // Enhanced abort detection
       if (config.signal && config.signal.aborted) {
-        console.log('Request was aborted during fetch');
         throw new DOMException('Request was aborted', 'AbortError');
       }
 
@@ -43,7 +42,6 @@ class APIClient {
       if (!response.ok) {
         // Handle abort status from server
         if (response.status === 499) {
-          console.log('Server confirmed request was aborted');
           throw new DOMException('Request was aborted', 'AbortError');
         }
         throw new Error(data.error || 'API request failed');
@@ -53,7 +51,6 @@ class APIClient {
     } catch (error) {
       // Enhanced abort error handling
       if (error.name === 'AbortError') {
-        console.log('API request aborted:', error.message);
         throw error;
       }
       
