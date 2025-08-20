@@ -399,7 +399,7 @@ class ClaudeAdapter extends AIAdapter {
           headers: {
             'x-api-key': process.env.CLAUDE_API_KEY,
             'anthropic-version': '2023-06-01',
-            'Content-Type': 'application/json'
+            'content-type': 'application/json'
           }
         }
       );

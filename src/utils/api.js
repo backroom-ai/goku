@@ -1,5 +1,5 @@
-//const API_BASE_URL = 'http://localhost:3001/api';
-const API_BASE_URL = 'https://buzz.backroomop.com/api';
+const API_BASE_URL = 'http://localhost:3001/api';
+// const API_BASE_URL = 'https://buzz.backroomop.com/api';
 
 class APIClient {
   constructor() {
@@ -31,6 +31,12 @@ class APIClient {
 
     try {
       const response = await fetch(url, config);
+      
+      // Check if the request was aborted
+      if (config.signal && config.signal.aborted) {
+        throw new DOMException('Request was aborted', 'AbortError');
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
@@ -39,6 +45,11 @@ class APIClient {
 
       return data;
     } catch (error) {
+      // Re-throw abort errors so they can be handled properly
+      if (error.name === 'AbortError') {
+        throw error;
+      }
+      
       console.error('API request error:', error);
       throw error;
     }
@@ -78,7 +89,7 @@ class APIClient {
     return this.request(`/chat/${chatId}`);
   }
 
-  async sendMessage(chatId, content, modelName, files = []) {
+  async sendMessage(chatId, content, modelName, files = [], signal = null) {
     const formData = new FormData();
     formData.append('content', content);
     formData.append('modelName', modelName);
@@ -98,6 +109,7 @@ class APIClient {
     return this.request(`/chat/${chatId}/message`, {
       method: 'POST',
       body: formData,
+      signal: signal, // Pass the abort signal
       headers: {
         // Don't set Content-Type for FormData, let browser set it with boundary
       }
@@ -218,11 +230,27 @@ class APIClient {
     });
   }
 
-  async deleteMessage(messageId) {
+  async deleteMessage(messageId, signal = null) {
     return this.request(`/chat/message/${messageId}`, {
       method: 'DELETE',
+      signal: signal, // Support abortion for delete operations too
     });
   }
+  async cancelRequest (chatId) {
+    const response = await fetch(`/api/chats/${chatId}/cancel`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to cancel request');
+    return response.json();
+  }
+  // New method to clean up incomplete conversations
+  async deleteLastMessagePair(chatId, signal = null) {
+    return this.request(`/chat/${chatId}/delete-last-pair`, {
+      method: 'DELETE',
+      signal: signal,
+    });
+  }
+  
   logout() {
     this.setToken(null);
   }
