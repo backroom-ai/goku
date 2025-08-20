@@ -278,6 +278,7 @@ const Chat = ({ resetToWelcome }) => {
     
     // Abort the API request immediately
     if (abortControllerRef.current?.controller) {
+      console.log('Aborting API request');
       abortControllerRef.current.controller.abort();
     }
     
@@ -371,6 +372,11 @@ const Chat = ({ resetToWelcome }) => {
       // Check if request was aborted before processing response
       if (controller.signal.aborted || isAborted) {
         console.log('Request was aborted, skipping response processing');
+        // Clean up any optimistic messages
+        setCurrentChat(prev => ({
+          ...prev,
+          messages: prev.messages.filter(msg => msg.id !== optimisticUserMessage.id)
+        }));
         return;
       }
       

@@ -106,6 +106,13 @@ class APIClient {
     
     formData.append('fileCount', files.length.toString());
 
+    // Add abort signal handling
+    if (signal) {
+      signal.addEventListener('abort', () => {
+        console.log('API request signal aborted');
+      });
+    }
+
     return this.request(`/chat/${chatId}/message`, {
       method: 'POST',
       body: formData,
