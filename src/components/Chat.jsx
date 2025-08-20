@@ -468,8 +468,10 @@ const Chat = ({ resetToWelcome }) => {
         setTypingText('');
         abortControllerRef.current = null;
         
-        // Show error message
-        alert('Failed to send message. Please try again.');
+        // Only show error message for real errors, not aborts
+        if (!error.message.includes('aborted') && error.name !== 'AbortError') {
+          alert('Failed to send message. Please try again.');
+        }
       }
     }
   };
