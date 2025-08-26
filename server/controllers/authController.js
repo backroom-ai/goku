@@ -28,6 +28,12 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Update last_login and last_active timestamps
+    await pool.query(
+      'UPDATE users SET last_login = NOW(), last_active = NOW() WHERE id = $1',
+      [user.id]
+    );
+
     // Generate JWT token
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },

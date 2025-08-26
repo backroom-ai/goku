@@ -20,9 +20,16 @@ const ensureUploadsDir = async () => {
 export const getUsers = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, email, first_name, last_name, role, created_at 
-       FROM users 
-       ORDER BY created_at DESC`
+      `SELECT u.id, u.email, u.first_name, u.last_name, u.role, u.created_at, u.last_login,
+              COALESCE(
+                (SELECT MAX(m.created_at) 
+                 FROM messages m 
+                 JOIN chats c ON m.chat_id = c.id 
+                 WHERE c.user_id = u.id), 
+                u.last_active
+              ) as last_active
+       FROM users u
+       ORDER BY u.created_at DESC`
     );
 
     res.json(result.rows);
@@ -76,23 +83,65 @@ export const createUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { email, firstName, lastName, role } = req.body;
+    const { email, firstName, lastName, role, password } = req.body;
 
-    const result = await pool.query(
-      `UPDATE users 
-       SET email = COALESCE($1, email),
-           first_name = COALESCE($2, first_name),
-           last_name = COALESCE($3, last_name),
-           role = COALESCE($4, role),
-           updated_at = now()
-       WHERE id = $5 
-       RETURNING id, email, first_name, last_name, role, created_at`,
-      [email, firstName, lastName, role, userId]
-    );
-
-    if (result.rows.length === 0) {
+    // Check if user exists
+    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+    if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
+
+    // Check if email is already taken by another user
+    if (email) {
+      const emailCheck = await pool.query(
+        'SELECT id FROM users WHERE email = $1 AND id != $2',
+        [email.toLowerCase(), userId]
+      );
+      if (emailCheck.rows.length > 0) {
+        return res.status(400).json({ error: 'Email already exists' });
+      }
+    }
+
+    let updateQuery = `UPDATE users SET updated_at = now()`;
+    let queryParams = [];
+    let paramIndex = 1;
+
+    if (email) {
+      updateQuery += `, email = $${paramIndex}`;
+      queryParams.push(email.toLowerCase());
+      paramIndex++;
+    }
+
+    if (firstName) {
+      updateQuery += `, first_name = $${paramIndex}`;
+      queryParams.push(firstName);
+      paramIndex++;
+    }
+
+    if (lastName) {
+      updateQuery += `, last_name = $${paramIndex}`;
+      queryParams.push(lastName);
+      paramIndex++;
+    }
+
+    if (role && ['admin', 'user'].includes(role)) {
+      updateQuery += `, role = $${paramIndex}`;
+      queryParams.push(role);
+      paramIndex++;
+    }
+
+    if (password && password.trim()) {
+      const saltRounds = 10;
+      const passwordHash = await bcrypt.hash(password, saltRounds);
+      updateQuery += `, password_hash = $${paramIndex}`;
+      queryParams.push(passwordHash);
+      paramIndex++;
+    }
+
+    updateQuery += ` WHERE id = $${paramIndex} RETURNING id, email, first_name, last_name, role, created_at, last_login, last_active`;
+    queryParams.push(userId);
+
+    const result = await pool.query(updateQuery, queryParams);
 
     res.json(result.rows[0]);
   } catch (error) {

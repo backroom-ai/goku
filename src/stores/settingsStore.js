@@ -19,7 +19,7 @@ const useSettingsStore = create((set, get) => ({
   
   // Actions
   loadUsers: async () => {
-    set({ usersLoading: true });
+    set({ usersLoading: false });
     try {
       const users = await api.getUsers();
       set({ users, usersLoading: false });

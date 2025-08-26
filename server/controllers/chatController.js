@@ -191,6 +191,11 @@ export const sendChatMessage = async (req, res) => {
       [chatId, 'user', content || '', JSON.stringify(attachments)]
     );
 
+    // Update user's last_active timestamp when they send a message
+    await pool.query(
+      'UPDATE users SET last_active = NOW() WHERE id = $1',
+      [req.user.id]
+    );
 
     // Get chat history for context
     const historyResult = await pool.query(

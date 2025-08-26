@@ -32,7 +32,9 @@ const createTables = async () => {
       first_name text,
       last_name text,
       created_at timestamptz DEFAULT now(),
-      updated_at timestamptz DEFAULT now()
+      updated_at timestamptz DEFAULT now(),
+      last_login timestamptz,
+      last_active timestamptz
     );
 
     -- Chats table for organizing conversations
