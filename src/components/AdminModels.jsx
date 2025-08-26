@@ -145,7 +145,6 @@ const AdminModels = () => {
                         )}
                       </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {model.display_name}
                         {model.model_name} • {model.provider}
                       </p>
                       
@@ -154,8 +153,8 @@ const AdminModels = () => {
                         <div className="mt-2">
                           <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Regional Knowledge Bases:</p>
                           <div className="flex flex-wrap gap-1">
-                            {model.knowledge_bases.map((kb) => (
-                              <span key={kb.region_code} className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
+                            {model.knowledge_bases.map((kb, index) => (
+                              <span key={`${kb.region_code}-${index}`} className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
                                 {kb.region_code}
                               </span>
                             ))}

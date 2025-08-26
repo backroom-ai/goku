@@ -273,7 +273,7 @@ export const updateModelConfig = async (req, res) => {
       [model_name, display_name, enabled, default_temperature, max_tokens, system_prompt, api_endpoint, modelId]
     );
 
-    res.json(result.rows);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Update model config error:', error);
     res.status(500).json({ error: 'Internal server error' });
