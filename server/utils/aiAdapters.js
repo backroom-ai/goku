@@ -4,6 +4,25 @@ import fs from 'fs/promises';
 import path from 'path';
 import FormData from 'form-data';
 
+// Helper function to get API keys from database
+const getApiKey = async (keyName) => {
+  try {
+    const result = await pool.query(
+      'SELECT key_value FROM api_keys WHERE key_name = $1',
+      [keyName]
+    );
+    
+    if (result.rows.length === 0) {
+      throw new Error(`API key '${keyName}' not found in database`);
+    }
+    
+    return result.rows[0].key_value;
+  } catch (error) {
+    console.error(`Error retrieving API key '${keyName}':`, error);
+    throw new Error(`API key '${keyName}' not configured`);
+  }
+};
+
 class AIAdapter {
   constructor(config) {
     this.config = config;
@@ -73,7 +92,7 @@ class OpenAIAdapter extends AIAdapter {
         },
         {
           headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Authorization': `Bearer ${await getApiKey('OPENAI_API_KEY')}`,
             'Content-Type': 'application/json'
           }
         }
@@ -116,7 +135,7 @@ class OpenAIAdapter extends AIAdapter {
         {},
         {
           headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Authorization': `Bearer ${await getApiKey('OPENAI_API_KEY')}`,
             'Content-Type': 'application/json',
             'OpenAI-Beta': 'assistants=v2'
           }
@@ -139,7 +158,7 @@ class OpenAIAdapter extends AIAdapter {
         },
         {
           headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Authorization': `Bearer ${await getApiKey('OPENAI_API_KEY')}`,
             'Content-Type': 'application/json',
             'OpenAI-Beta': 'assistants=v2'
           }
@@ -156,7 +175,7 @@ class OpenAIAdapter extends AIAdapter {
         },
         {
           headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Authorization': `Bearer ${await getApiKey('OPENAI_API_KEY')}`,
             'Content-Type': 'application/json',
             'OpenAI-Beta': 'assistants=v2'
           }
@@ -172,7 +191,7 @@ class OpenAIAdapter extends AIAdapter {
         `https://api.openai.com/v1/threads/${threadId}/messages`,
         {
           headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Authorization': `Bearer ${await getApiKey('OPENAI_API_KEY')}`,
             'OpenAI-Beta': 'assistants=v2'
           }
         }
@@ -215,7 +234,7 @@ class OpenAIAdapter extends AIAdapter {
           formData,
           {
             headers: {
-              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'Authorization': `Bearer ${await getApiKey('OPENAI_API_KEY')}`,
               ...formData.getHeaders() // This gets the proper multipart headers
             }
           }
@@ -253,7 +272,7 @@ class OpenAIAdapter extends AIAdapter {
       assistantData,
       {
         headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${await getApiKey('OPENAI_API_KEY')}`,
           'Content-Type': 'application/json',
           'OpenAI-Beta': 'assistants=v2'
         }
@@ -271,7 +290,7 @@ class OpenAIAdapter extends AIAdapter {
         `https://api.openai.com/v1/threads/${threadId}/runs/${runId}`,
         {
           headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Authorization': `Bearer ${await getApiKey('OPENAI_API_KEY')}`,
             'OpenAI-Beta': 'assistants=v2'
           }
         }
@@ -299,7 +318,7 @@ class OpenAIAdapter extends AIAdapter {
         `https://api.openai.com/v1/assistants/${assistantId}`,
         {
           headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Authorization': `Bearer ${await getApiKey('OPENAI_API_KEY')}`,
             'OpenAI-Beta': 'assistants=v2'
           }
         }
@@ -315,7 +334,7 @@ class OpenAIAdapter extends AIAdapter {
           `https://api.openai.com/v1/files/${file.id}`,
           {
             headers: {
-              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+              'Authorization': `Bearer ${await getApiKey('OPENAI_API_KEY')}`
             }
           }
         );
@@ -397,7 +416,7 @@ class ClaudeAdapter extends AIAdapter {
         },
         {
           headers: {
-            'x-api-key': process.env.CLAUDE_API_KEY,
+            'x-api-key': await getApiKey('CLAUDE_API_KEY'),
             'anthropic-version': '2023-06-01',
             'content-type': 'application/json'
           }
@@ -518,7 +537,7 @@ class GroqAdapter extends AIAdapter {
         },
         {
           headers: {
-            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Authorization': `Bearer ${await getApiKey('GROQ_API_KEY')}`,
             'Content-Type': 'application/json'
           }
         }
@@ -589,7 +608,7 @@ class OllamaAdapter extends AIAdapter {
         : processedMessages.map(m => `${m.role}: ${m.content}`).join('\n');
 
       const response = await axios.post(
-        `${process.env.OLLAMA_URL}/api/generate`,
+        `${await getApiKey('OLLAMA_URL')}/api/generate`,
         {
           model: this.config.model_name.replace('ollama-', ''),
           prompt,

@@ -4,10 +4,10 @@ import api from '../utils/api';
 
 const AdminApiKeys = () => {
   const [apiKeys, setApiKeys] = useState({
-    openai: '',
-    claude: '',
-    groq: '',
-    ollama: ''
+    OPENAI_API_KEY: '',
+    CLAUDE_API_KEY: '',
+    GROQ_API_KEY: '',
+    OLLAMA_URL: ''
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -16,28 +16,28 @@ const AdminApiKeys = () => {
 
   const keyConfigs = [
     {
-      key: 'openai',
+      key: 'OPENAI_API_KEY',
       label: 'OpenAI API Key',
       description: 'Required for GPT models',
       placeholder: 'sk-...',
       icon: '🤖'
     },
     {
-      key: 'claude',
+      key: 'CLAUDE_API_KEY',
       label: 'Anthropic API Key',
       description: 'Required for Claude models',
       placeholder: 'sk-ant-...',
       icon: '🧠'
     },
     {
-      key: 'groq',
+      key: 'GROQ_API_KEY',
       label: 'Groq API Key',
       description: 'Required for Groq models',
       placeholder: 'gsk_...',
       icon: '⚡'
     },
     {
-      key: 'ollama',
+      key: 'OLLAMA_URL',
       label: 'Ollama URL',
       description: 'Local Ollama server endpoint',
       placeholder: 'http://localhost:11434',
