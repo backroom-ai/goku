@@ -587,6 +587,9 @@ const Chat = ({ resetToWelcome }) => {
   const formatContent = (content) => {
     if (!content) return null;
     
+    // First, convert literal \n to actual newlines
+    const normalizedContent = content.replace(/\\n/g, '\n');
+    
     // Simple markdown-like formatting
     const formatText = (text) => {
       // Handle code blocks first (```code```)
@@ -611,86 +614,88 @@ const Chat = ({ resetToWelcome }) => {
       
       return text;
     };
-
+  
     // Split by lines and process each
-    const lines = content.split('\n');
+    const lines = normalizedContent.split('\n');
     const formattedLines = [];
-    let inList = false;
-    let listItems = [];
-
+    let currentList = [];
+    let currentListType = null;
+  
+    const flushCurrentList = () => {
+      if (currentList.length > 0) {
+        if (currentListType === 'ordered') {
+          formattedLines.push(
+            <ol key={`list-${formattedLines.length}`} className="list-decimal list-inside my-2 space-y-1">
+              {currentList}
+            </ol>
+          );
+        } else if (currentListType === 'unordered') {
+          formattedLines.push(
+            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
+              {currentList}
+            </ul>
+          );
+        }
+        currentList = [];
+        currentListType = null;
+      }
+    };
+  
     lines.forEach((line, index) => {
       const trimmedLine = line.trim();
       
       // Handle headers
       if (trimmedLine.startsWith('### ')) {
-        if (inList) {
-          formattedLines.push(
-            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
-              {listItems}
-            </ul>
-          );
-          listItems = [];
-          inList = false;
-        }
+        flushCurrentList();
         formattedLines.push(
           <h3 key={index} className="text-lg font-semibold mt-4 mb-2">
-            {formatText(trimmedLine.substring(4))}
+            <span dangerouslySetInnerHTML={{ __html: formatText(trimmedLine.substring(4)) }} />
           </h3>
         );
       } else if (trimmedLine.startsWith('## ')) {
-        if (inList) {
-          formattedLines.push(
-            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
-              {listItems}
-            </ul>
-          );
-          listItems = [];
-          inList = false;
-        }
+        flushCurrentList();
         formattedLines.push(
           <h2 key={index} className="text-xl font-bold mt-4 mb-2">
-            {formatText(trimmedLine.substring(3))}
+            <span dangerouslySetInnerHTML={{ __html: formatText(trimmedLine.substring(3)) }} />
           </h2>
         );
       } else if (trimmedLine.startsWith('# ')) {
-        if (inList) {
-          formattedLines.push(
-            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
-              {listItems}
-            </ul>
-          );
-          listItems = [];
-          inList = false;
-        }
+        flushCurrentList();
         formattedLines.push(
           <h1 key={index} className="text-2xl font-bold mt-4 mb-2">
-            {formatText(trimmedLine.substring(2))}
+            <span dangerouslySetInnerHTML={{ __html: formatText(trimmedLine.substring(2)) }} />
           </h1>
         );
       }
-      // Handle bullet points
-      else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ') || /^\d+\.\s/.test(trimmedLine)) {
-        const listContent = trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ') 
-          ? trimmedLine.substring(2) 
-          : trimmedLine.replace(/^\d+\.\s/, '');
+      // Handle numbered lists
+      else if (/^\d+\.\s/.test(trimmedLine)) {
+        // If we were building a different type of list, flush it first
+        if (currentListType && currentListType !== 'ordered') {
+          flushCurrentList();
+        }
         
-        listItems.push(
-          <li key={`${index}-${listItems.length}`} 
-              dangerouslySetInnerHTML={{ __html: formatText(listContent) }} />
+        const listContent = trimmedLine.replace(/^\d+\.\s/, '');
+        currentList.push(
+          <li key={`ordered-${index}`} dangerouslySetInnerHTML={{ __html: formatText(listContent) }} />
         );
-        inList = true;
+        currentListType = 'ordered';
+      }
+      // Handle bullet points  
+      else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+        // If we were building a different type of list, flush it first
+        if (currentListType && currentListType !== 'unordered') {
+          flushCurrentList();
+        }
+        
+        const listContent = trimmedLine.substring(2);
+        currentList.push(
+          <li key={`bullet-${index}`} dangerouslySetInnerHTML={{ __html: formatText(listContent) }} />
+        );
+        currentListType = 'unordered';
       }
       // Handle blockquotes
       else if (trimmedLine.startsWith('> ')) {
-        if (inList) {
-          formattedLines.push(
-            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
-              {listItems}
-            </ul>
-          );
-          listItems = [];
-          inList = false;
-        }
+        flushCurrentList();
         formattedLines.push(
           <blockquote key={index} className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-2 italic">
             <div dangerouslySetInnerHTML={{ __html: formatText(trimmedLine.substring(2)) }} />
@@ -699,28 +704,14 @@ const Chat = ({ resetToWelcome }) => {
       }
       // Handle empty lines
       else if (trimmedLine === '') {
-        if (inList) {
-          formattedLines.push(
-            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
-              {listItems}
-            </ul>
-          );
-          listItems = [];
-          inList = false;
-        }
+        // Empty lines can end a list context
+        flushCurrentList();
         formattedLines.push(<br key={index} />);
       }
-      // Handle regular paragraphs
-      else {
-        if (inList) {
-          formattedLines.push(
-            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
-              {listItems}
-            </ul>
-          );
-          listItems = [];
-          inList = false;
-        }
+      // Handle regular paragraphs - this is the key fix
+      else if (trimmedLine !== '') {
+        // Regular text should flush any current list and be treated as a paragraph
+        flushCurrentList();
         formattedLines.push(
           <p key={index} className="mb-2 last:mb-0">
             <span dangerouslySetInnerHTML={{ __html: formatText(line) }} />
@@ -728,16 +719,10 @@ const Chat = ({ resetToWelcome }) => {
         );
       }
     });
-
-    // Handle any remaining list items
-    if (inList && listItems.length > 0) {
-      formattedLines.push(
-        <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
-          {listItems}
-        </ul>
-      );
-    }
-
+  
+    // Flush any remaining list items
+    flushCurrentList();
+  
     return <div className="space-y-1">{formattedLines}</div>;
   };
 
