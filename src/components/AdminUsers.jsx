@@ -507,15 +507,23 @@ const AdminUsers = () => {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEditUser(user)}
-                            className="flex items-center px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Edit
-                          </button>
-                        </div>
+                        // <div className="flex space-x-2">
+                        //   <button
+                        //     onClick={() => handleEditUser(user)}
+                        //     className="flex items-center px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                        //   >
+                        //     <Edit className="w-3 h-3 mr-1" />
+                        //     Edit
+                        //   </button>
+                        // </div>
+                        <select
+                      value={user.role}
+                      onChange={(e) => handleUpdateUserRole(user.id, e.target.value)}
+                      className="px-3 py-2 bg-gray-100 dark:bg-[#181818] text-gray-900 dark:text-white rounded-lg text-sm"
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                    </select>
                       )}
                     </td>
                   </tr>
