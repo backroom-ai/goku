@@ -528,7 +528,7 @@ class GroqAdapter extends AIAdapter {
 
     try {
       const response = await axios.post(
-        'https://api.groq.com/openai/v1/chat/completions',
+        'https://api.x.ai/v1/chat/completions',
         {
           model: this.config.model_name,
           messages: formattedMessages,
