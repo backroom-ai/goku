@@ -82,12 +82,16 @@ class OpenAIAdapter extends AIAdapter {
 
     try {
       const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
+        'https://api.openai.com/v1/responses',
         {
           model: this.config.model_name,
-          messages: formattedMessages,
+          input: formattedMessages,
+          tools: [{
+            type: "web_search_preview",
+            search_context_size: "medium",
+          }],
           temperature: newtemperature,
-          max_tokens: maxTokens,
+          max_output_tokens: maxTokens,
           stream: false
         },
         {
@@ -97,9 +101,10 @@ class OpenAIAdapter extends AIAdapter {
           }
         }
       );
+      console.log(response.data.output?.[0]?.content?.[0]?.text || response.data.output?.[1]?.content?.[0]?.text);
 
       return {
-        content: response.data.choices[0].message.content,
+        content: response.data.output?.[0]?.content?.[0]?.text || response.data.output?.[1]?.content?.[0]?.text,
         tokensUsed: response.data.usage?.total_tokens || 0
       };
     } catch (error) {
@@ -532,6 +537,7 @@ class GroqAdapter extends AIAdapter {
         {
           model: this.config.model_name,
           messages: formattedMessages,
+          search_parameters: {"mode": "auto"},
           temperature: newtemperature,
           max_tokens: maxTokens
         },

@@ -590,29 +590,61 @@ const Chat = ({ resetToWelcome }) => {
     // First, convert literal \n to actual newlines
     const normalizedContent = content.replace(/\\n/g, '\n');
     
-    // Simple markdown-like formatting
-    const formatText = (text) => {
-      // Handle code blocks first (```code```)
-      text = text.replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg my-2 overflow-x-auto"><code>$1</code></pre>');
+    // Process inline formatting within text
+    const processInlineFormatting = (text) => {
+      const parts = [];
+      let lastIndex = 0;
       
-      // Handle inline code (`code`)
-      text = text.replace(/`([^`]+)`/g, '<code class="bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-sm">$1</code>');
+      // Combined regex for all inline elements
+      const inlineRegex = /(\*\*(.*?)\*\*)|(\*(.*?)\*)|(`(.*?)`)|(\[([^\]]+)\]\(([^)]+)\))|~~(.*?)~~/g;
+      let match;
       
-      // Handle bold (**text** or __text__)
-      text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>');
-      text = text.replace(/__(.*?)__/g, '<strong class="font-semibold">$1</strong>');
+      while ((match = inlineRegex.exec(text)) !== null) {
+        // Add text before match
+        if (match.index > lastIndex) {
+          parts.push(text.substring(lastIndex, match.index));
+        }
+        
+        if (match[1]) {
+          // Bold **text**
+          parts.push(<strong key={match.index} className="font-semibold">{match[2]}</strong>);
+        } else if (match[3]) {
+          // Italic *text*
+          parts.push(<em key={match.index} className="italic">{match[4]}</em>);
+        } else if (match[5]) {
+          // Inline code `code`
+          parts.push(
+            <code key={match.index} className="bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-sm font-mono">
+              {match[6]}
+            </code>
+          );
+        } else if (match[7]) {
+          // Link [text](url)
+          parts.push(
+            <a 
+              key={match.index} 
+              href={match[9]} 
+              className="text-blue-500 hover:text-blue-600 underline" 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              {match[8]}
+            </a>
+          );
+        } else if (match[10]) {
+          // Strikethrough ~~text~~
+          parts.push(<del key={match.index} className="line-through">{match[10]}</del>);
+        }
+        
+        lastIndex = match.index + match[0].length;
+      }
       
-      // Handle italic (*text* or _text_)
-      text = text.replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>');
-      text = text.replace(/_([^_]+)_/g, '<em class="italic">$1</em>');
+      // Add remaining text
+      if (lastIndex < text.length) {
+        parts.push(text.substring(lastIndex));
+      }
       
-      // Handle strikethrough (~~text~~)
-      text = text.replace(/~~(.*?)~~/g, '<del class="line-through">$1</del>');
-      
-      // Handle links [text](url)
-      text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-500 hover:text-blue-600 underline" target="_blank" rel="noopener noreferrer">$1</a>');
-      
-      return text;
+      return parts.length > 0 ? parts : text;
     };
   
     // Split by lines and process each
@@ -620,18 +652,20 @@ const Chat = ({ resetToWelcome }) => {
     const formattedLines = [];
     let currentList = [];
     let currentListType = null;
+    let inCodeBlock = false;
+    let codeBlockContent = [];
   
     const flushCurrentList = () => {
       if (currentList.length > 0) {
         if (currentListType === 'ordered') {
           formattedLines.push(
-            <ol key={`list-${formattedLines.length}`} className="list-decimal list-inside my-2 space-y-1">
+            <ol key={`list-${formattedLines.length}`} className="list-decimal list-inside my-2 ml-4 space-y-1">
               {currentList}
             </ol>
           );
         } else if (currentListType === 'unordered') {
           formattedLines.push(
-            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 space-y-1">
+            <ul key={`list-${formattedLines.length}`} className="list-disc list-inside my-2 ml-4 space-y-1">
               {currentList}
             </ul>
           );
@@ -641,55 +675,83 @@ const Chat = ({ resetToWelcome }) => {
       }
     };
   
-    lines.forEach((line, index) => {
+    for (let index = 0; index < lines.length; index++) {
+      const line = lines[index];
       const trimmedLine = line.trim();
+      
+      // Handle code block boundaries
+      if (trimmedLine.startsWith('```')) {
+        if (inCodeBlock) {
+          // End code block
+          flushCurrentList();
+          formattedLines.push(
+            <pre key={index} className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg my-2 overflow-x-auto font-mono text-sm">
+              <code>{codeBlockContent.join('\n')}</code>
+            </pre>
+          );
+          codeBlockContent = [];
+          inCodeBlock = false;
+        } else {
+          // Start code block
+          inCodeBlock = true;
+        }
+        continue;
+      }
+      
+      // Collect code block content
+      if (inCodeBlock) {
+        codeBlockContent.push(line);
+        continue;
+      }
       
       // Handle headers
       if (trimmedLine.startsWith('### ')) {
         flushCurrentList();
         formattedLines.push(
-          <h3 key={index} className="text-lg font-semibold mt-4 mb-2">
-            <span dangerouslySetInnerHTML={{ __html: formatText(trimmedLine.substring(4)) }} />
+          <h3 key={index} className="text-lg font-semibold mt-4 mb-2 first:mt-0">
+            {processInlineFormatting(trimmedLine.substring(4))}
           </h3>
         );
       } else if (trimmedLine.startsWith('## ')) {
         flushCurrentList();
         formattedLines.push(
-          <h2 key={index} className="text-xl font-bold mt-4 mb-2">
-            <span dangerouslySetInnerHTML={{ __html: formatText(trimmedLine.substring(3)) }} />
+          <h2 key={index} className="text-xl font-bold mt-4 mb-2 first:mt-0">
+            {processInlineFormatting(trimmedLine.substring(3))}
           </h2>
         );
       } else if (trimmedLine.startsWith('# ')) {
         flushCurrentList();
         formattedLines.push(
-          <h1 key={index} className="text-2xl font-bold mt-4 mb-2">
-            <span dangerouslySetInnerHTML={{ __html: formatText(trimmedLine.substring(2)) }} />
+          <h1 key={index} className="text-2xl font-bold mt-4 mb-2 first:mt-0">
+            {processInlineFormatting(trimmedLine.substring(2))}
           </h1>
         );
       }
       // Handle numbered lists
-      else if (/^\d+\.\s/.test(trimmedLine)) {
-        // If we were building a different type of list, flush it first
+      else if (/^\d+\.\s+/.test(trimmedLine)) {
         if (currentListType && currentListType !== 'ordered') {
           flushCurrentList();
         }
         
-        const listContent = trimmedLine.replace(/^\d+\.\s/, '');
+        const listContent = trimmedLine.replace(/^\d+\.\s+/, '');
         currentList.push(
-          <li key={`ordered-${index}`} dangerouslySetInnerHTML={{ __html: formatText(listContent) }} />
+          <li key={`ordered-${index}`} className="ml-0">
+            {processInlineFormatting(listContent)}
+          </li>
         );
         currentListType = 'ordered';
       }
-      // Handle bullet points  
-      else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
-        // If we were building a different type of list, flush it first
+      // Handle bullet points
+      else if (/^[-*+]\s+/.test(trimmedLine)) {
         if (currentListType && currentListType !== 'unordered') {
           flushCurrentList();
         }
         
-        const listContent = trimmedLine.substring(2);
+        const listContent = trimmedLine.replace(/^[-*+]\s+/, '');
         currentList.push(
-          <li key={`bullet-${index}`} dangerouslySetInnerHTML={{ __html: formatText(listContent) }} />
+          <li key={`bullet-${index}`} className="ml-0">
+            {processInlineFormatting(listContent)}
+          </li>
         );
         currentListType = 'unordered';
       }
@@ -697,28 +759,57 @@ const Chat = ({ resetToWelcome }) => {
       else if (trimmedLine.startsWith('> ')) {
         flushCurrentList();
         formattedLines.push(
-          <blockquote key={index} className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-2 italic">
-            <div dangerouslySetInnerHTML={{ __html: formatText(trimmedLine.substring(2)) }} />
+          <blockquote key={index} className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-2 italic text-gray-700 dark:text-gray-300">
+            {processInlineFormatting(trimmedLine.substring(2))}
           </blockquote>
+        );
+      }
+      // Handle horizontal rules
+      else if (/^[-*_]{3,}$/.test(trimmedLine)) {
+        flushCurrentList();
+        formattedLines.push(
+          <hr key={index} className="border-gray-300 dark:border-gray-600 my-4" />
         );
       }
       // Handle empty lines
       else if (trimmedLine === '') {
-        // Empty lines can end a list context
-        flushCurrentList();
-        formattedLines.push(<br key={index} />);
+        let shouldFlush = false;
+        if (currentList.length > 0) {
+          // Look ahead to see if next non-empty line continues the list
+          for (let i = index + 1; i < lines.length; i++) {
+            const nextTrimmed = lines[i].trim();
+            if (nextTrimmed === '') continue;
+            
+            const isOrderedList = /^\d+\.\s+/.test(nextTrimmed);
+            const isUnorderedList = /^[-*+]\s+/.test(nextTrimmed);
+            
+            if ((currentListType === 'ordered' && !isOrderedList) ||
+                (currentListType === 'unordered' && !isUnorderedList)) {
+              shouldFlush = true;
+            }
+            break;
+          }
+        }
+        
+        if (shouldFlush) {
+          flushCurrentList();
+        }
+        
+        // Add spacing only if we're not in the middle of a list
+        if (currentList.length === 0) {
+          formattedLines.push(<div key={index} className="h-2" />);
+        }
       }
-      // Handle regular paragraphs - this is the key fix
+      // Handle regular paragraphs
       else if (trimmedLine !== '') {
-        // Regular text should flush any current list and be treated as a paragraph
         flushCurrentList();
         formattedLines.push(
-          <p key={index} className="mb-2 last:mb-0">
-            <span dangerouslySetInnerHTML={{ __html: formatText(line) }} />
+          <p key={index} className="mb-2 last:mb-0 leading-relaxed">
+            {processInlineFormatting(line)}
           </p>
         );
       }
-    });
+    }
   
     // Flush any remaining list items
     flushCurrentList();
