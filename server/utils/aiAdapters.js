@@ -689,75 +689,86 @@ class N8NAdapter extends AIAdapter {
     const latestMessage = messages && messages.length > 0 ? messages[messages.length - 1] : null;
     
     try {
-      // Process attachments for N8N webhook
-      const processedAttachments = await this.processAttachmentsForN8N(attachments);
       console.log(this.config.api_endpoint, 'N8N Webhook URL:', this.config.api_endpoint);
       
-      const response = await axios.post(
-        this.config.api_endpoint,
-        {
-          messages,
-          systemPrompt,
-          chatId: chatId || null,
-          chatInput: latestMessage.content,
-          attachments: processedAttachments,
-          ...options
+      // Check if we have attachments that need multipart/form-data
+      if (attachments && attachments.length > 0) {
+        // Use FormData for multipart/form-data when attachments are present
+        const formData = new FormData();
+        
+        // Add text fields
+        formData.append('messages', JSON.stringify(messages));
+        formData.append('systemPrompt', systemPrompt || '');
+        formData.append('chatId', chatId || '');
+        formData.append('chatInput', latestMessage.content || '');
+        formData.append('temperature', options.temperature || '0.7');
+        formData.append('maxTokens', options.maxTokens || '4096');
+        
+        // Add attachments as files
+        for (let i = 0; i < attachments.length; i++) {
+          const attachment = attachments[i];
+          try {
+            const fileBuffer = await this.readFileContent(attachment.path);
+            formData.append(`attachment_${i}`, fileBuffer, {
+              filename: attachment.name,
+              contentType: attachment.type
+            });
+            
+            // Also add attachment metadata
+            formData.append(`attachment_${i}_metadata`, JSON.stringify({
+              name: attachment.name,
+              type: attachment.type,
+              size: attachment.size,
+              filename: attachment.filename
+            }));
+          } catch (error) {
+            console.error(`Error adding attachment ${attachment.name} to form data:`, error);
+          }
         }
-      );
-      console.log('N8N Webhook response:', response.data.output);
+        
+        const response = await axios.post(
+          this.config.api_endpoint,
+          formData,
+          {
+            headers: {
+              ...formData.getHeaders(),
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
+        
+        console.log('N8N Webhook response (multipart):', response.data.output);
+        
+        return {
+          content: response.data.output || response.data.content || response.data[0].output || response.data[0].content || 'No response generated',
+          tokensUsed: response.data.tokensUsed || 0
+        };
+      } else {
+        // No attachments, use regular JSON request
+        const response = await axios.post(
+          this.config.api_endpoint,
+          {
+            messages,
+            systemPrompt,
+            chatId: chatId || null,
+            chatInput: latestMessage.content,
+            ...options
+          }
+        );
+        console.log('N8N Webhook response (JSON):', response.data);
 
-      return {
-        content: response.data.output || response.data.content || response.data[0].output || response.data[0].content || 'No response generated',
-        tokensUsed: response.data.tokensUsed || 0
-      };
+        return {
+          content: response.data.output || response.data.content || response.data[0].output || response.data[0].content || 'No response generated',
+          tokensUsed: response.data.tokensUsed || 0
+        };
+      }
     } catch (error) {
       console.error('N8N Webhook error:', error.message);
       throw new Error(`N8N Webhook error: ${error.message}`);
     }
   }
 
-  async processAttachmentsForN8N(attachments) {
-    if (!attachments || attachments.length === 0) {
-      return [];
-    }
 
-    const processedAttachments = [];
-
-    for (const attachment of attachments) {
-      try {
-        if (this.isImageFile(attachment.type)) {
-          const imageBuffer = await this.readFileContent(attachment.path);
-          const base64Image = imageBuffer.toString('base64');
-          
-          processedAttachments.push({
-            name: attachment.name,
-            type: attachment.type,
-            data: base64Image,
-            encoding: 'base64'
-          });
-        } else {
-          const fileContent = await this.readFileContent(attachment.path);
-          const textContent = fileContent.toString('utf8');
-          
-          processedAttachments.push({
-            name: attachment.name,
-            type: attachment.type,
-            data: textContent,
-            encoding: 'utf8'
-          });
-        }
-      } catch (error) {
-        console.error(`Error processing attachment ${attachment.name}:`, error);
-        processedAttachments.push({
-          name: attachment.name,
-          type: attachment.type,
-          error: 'Failed to process file'
-        });
-      }
-    }
-
-    return processedAttachments;
-  }
 }
 
 export const createAdapter = (modelConfig) => {
